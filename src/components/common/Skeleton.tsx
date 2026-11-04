@@ -29,14 +29,14 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
 export const ProductCardSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col gap-3 p-3 rounded-[20px] bg-[var(--s0)] border border-[var(--bd)]">
-      <Skeleton className="w-full aspect-[0.95] rounded-[16px]" />
-      <div className="flex flex-col gap-2 p-1">
-        <Skeleton className="w-24 h-3 rounded-md" />
-        <Skeleton className="w-full h-4 rounded-md" />
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--s2)]">
-          <Skeleton className="w-16 h-4 rounded-md" />
-          <Skeleton className="w-14 h-7 rounded-full" />
+    <div className="flex flex-col gap-2 p-2 rounded-[16px] bg-[var(--s0)] border border-[var(--bd)]">
+      <Skeleton className="w-full aspect-[0.95] rounded-[12px]" />
+      <div className="flex flex-col gap-1.5 p-0.5">
+        <Skeleton className="w-20 h-2.5 rounded-md" />
+        <Skeleton className="w-full h-3.5 rounded-md" />
+        <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-[var(--s2)]">
+          <Skeleton className="w-14 h-3.5 rounded-md" />
+          <Skeleton className="w-6 h-6 rounded-full" />
         </div>
       </div>
     </div>
@@ -120,51 +120,48 @@ export const StoreHeaderSkeleton: React.FC = () => {
 
 export const ProductDetailSkeleton: React.FC = () => {
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 w-full">
+    <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-6 md:py-8 w-full">
       <div className="flex items-center gap-2 mb-6">
-        <Skeleton className="w-16 h-4 rounded-md" />
+        <Skeleton className="w-16 h-3.5 rounded-md" />
         <span className="text-[var(--t3)]">/</span>
-        <Skeleton className="w-24 h-4 rounded-md" />
+        <Skeleton className="w-24 h-3.5 rounded-md" />
         <span className="text-[var(--t3)]">/</span>
-        <Skeleton className="w-32 h-4 rounded-md" />
+        <Skeleton className="w-32 h-3.5 rounded-md" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 lg:gap-12 items-start">
         {/* Left: Gallery */}
-        <div className="flex flex-col gap-4">
-          <Skeleton className="w-full aspect-square rounded-[24px]" />
-          <div className="flex gap-3">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="w-16 h-16 rounded-[12px]" />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex md:flex-col gap-2.5 w-full md:w-[68px]">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="w-14 h-14 md:w-full md:h-[68px] rounded-[10px]" />
             ))}
           </div>
+          <Skeleton className="flex-1 aspect-square max-h-[480px] rounded-[18px]" />
         </div>
 
         {/* Right: Info */}
-        <div className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <Skeleton className="w-28 h-5 rounded-full" />
-            <Skeleton className="w-20 h-5 rounded-full" />
-          </div>
+        <div className="flex flex-col gap-4">
+          <Skeleton className="w-24 h-3.5 rounded-full" />
+          <Skeleton className="w-4/5 h-6 rounded-lg" />
+          <Skeleton className="w-28 h-6 rounded-md" />
 
-          <Skeleton className="w-4/5 h-8 rounded-lg" />
-          <Skeleton className="w-32 h-7 rounded-md" />
+          <div className="h-[1px] bg-[var(--s2)] my-1" />
 
-          <div className="flex flex-col gap-2 pt-2">
+          <div className="flex flex-col gap-2">
             <Skeleton className="w-20 h-3 rounded-md" />
-            <div className="flex gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="w-14 h-9 rounded-[10px]" />
+                <Skeleton key={i} className="h-[50px] rounded-[11px]" />
               ))}
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 pt-4">
-            <Skeleton className="w-full h-12 rounded-full" />
-            <Skeleton className="w-full h-12 rounded-full" />
+          <Skeleton className="w-full h-24 rounded-[14px]" />
+          <div className="flex gap-2.5">
+            <Skeleton className="flex-1 h-[44px] rounded-[22px]" />
+            <Skeleton className="w-28 h-[44px] rounded-[22px]" />
           </div>
-
-          <Skeleton className="w-full h-24 rounded-[16px] mt-2" />
         </div>
       </div>
     </div>

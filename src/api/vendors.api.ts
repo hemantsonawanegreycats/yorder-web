@@ -45,17 +45,16 @@ export const mapBackendToStore = (bv: any): Store => {
       ini: 'SH',
       cat: 'Specialty Showroom',
       addr: 'Mumbai, Maharashtra',
-      rating: '4.8',
+      rating: 'New',
       eta: '45 min',
-      dist: '1.8 km',
-      count: '150',
+      dist: 'Nearby',
+      count: '',
       hours: 'OPEN TODAY',
-      browsing: '8',
-      img: '/assets/map-cluster.jpg',
+      img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=75',
       repName: 'Floor Team',
       repIni: 'FT',
       repLine: 'Floor team is on the floor',
-      meta: 'Bandra · 1.8 km · 150 items',
+      meta: 'Bandra · Verified showroom',
       isOnline: true,
     };
   }
@@ -71,12 +70,15 @@ export const mapBackendToStore = (bv: any): Store => {
     bv.image?.[0]?.url ||
     'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=75';
 
-  const countStr = bv._count?.Product ? String(bv._count.Product) : '150';
+  const countStr = bv._count?.Product ? String(bv._count.Product) : '';
   const rep = bv.owner?.first_name || words[0] || 'Floor Team';
   const repIni = rep.slice(0, 2).toUpperCase();
 
   const openSlot = Array.isArray(bv.open_hours) ? bv.open_hours.find((h: any) => !h?.isClosed) : null;
   const hoursStr = openSlot?.close ? `OPEN TILL ${openSlot.close}` : 'OPEN TODAY';
+
+  const rawRating = bv.rating && Number(bv.rating) > 0 ? Number(bv.rating).toFixed(1) : 'New';
+  const ratingCount = bv.rating_count ? Number(bv.rating_count) : undefined;
 
   return {
     id: String(bv.id || '1'),
@@ -84,18 +86,20 @@ export const mapBackendToStore = (bv: any): Store => {
     ini,
     cat,
     addr,
-    rating: String(bv.rating && bv.rating > 0 ? bv.rating : '4.8'),
+    rating: rawRating,
+    ratingCount,
     eta: '45 min',
-    dist: '1.8 km',
+    dist: 'Nearby',
     count: countStr,
     hours: hoursStr,
-    browsing: String(Math.floor(Math.random() * 8) + 6),
     img,
     repName: rep,
     repIni,
     repLine: `${rep} is on the floor`,
-    meta: `${bv.address?.nearBy || bv.address?.city || 'Bandra'} · 1.8 km · ${countStr} items`,
+    meta: `${bv.address?.nearBy || bv.address?.city || 'Bandra'} · ${countStr ? `${countStr} items` : 'Live stock'}`,
     isOnline: bv.isOnline ?? true,
+    lat: bv.address?.latitude ? parseFloat(String(bv.address.latitude)) : undefined,
+    lng: bv.address?.longitude ? parseFloat(String(bv.address.longitude)) : undefined,
   };
 };
 

@@ -78,6 +78,9 @@ apiClient.interceptors.response.use(
     const status = error?.response?.status;
     if (status === 401) {
       removeStoredToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('yorder:auth_unauthorized'));
+      }
     }
     return Promise.reject(error);
   }

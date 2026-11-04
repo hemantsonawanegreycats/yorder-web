@@ -369,8 +369,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
     // 2. OpenStreetMap / Nominatim fallback
     try {
       const resp = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
-        { headers: { 'User-Agent': 'YorderWeb/1.0' } }
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
       );
       if (resp.ok) {
         const data = await resp.json();
@@ -671,13 +670,18 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
       return;
     }
 
+    if (!pincode.trim() || !/^\d{6}$/.test(pincode.trim())) {
+      showToast('Please enter a valid 6-digit Indian PIN code');
+      return;
+    }
+
     const payload: CreateAddressPayload = {
-      addressLine1: flatNo.trim(),
-      addressLine2: street.trim(),
-      nearBy: landmark.trim() || detectedDetails.neighbourhood,
-      city: city.trim() || 'Mumbai',
+      addressLine1: flatNo.trim().slice(0, 120),
+      addressLine2: street.trim().slice(0, 120),
+      nearBy: (landmark.trim() || detectedDetails.neighbourhood).slice(0, 120),
+      city: (city.trim() || 'Mumbai').slice(0, 50),
       state: state.trim() || 'Maharashtra',
-      zipCode: pincode.trim() || '400050',
+      zipCode: pincode.trim(),
       type: addressType,
       latitude: coords.lat,
       longitude: coords.lng,
@@ -706,6 +710,9 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
 
   const handleDeleteSaved = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
+    if (!window.confirm('Are you sure you want to remove this saved delivery address?')) {
+      return;
+    }
     deleteAddressMutation.mutate(id, {
       onSuccess: () => {
         showToast('Address removed');
@@ -1111,6 +1118,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
               <input
                 type="text"
                 required
+                maxLength={120}
                 value={flatNo}
                 onChange={(e) => setFlatNo(e.target.value)}
                 placeholder="e.g. Flat 402, Sea Breeze Apts"
@@ -1125,6 +1133,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
               </label>
               <input
                 type="text"
+                maxLength={120}
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
                 placeholder="e.g. 4th Floor, Hill Road"
@@ -1140,6 +1149,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
               <input
                 type="text"
                 required
+                maxLength={120}
                 value={landmark}
                 onChange={(e) => setLandmark(e.target.value)}
                 placeholder="e.g. Opp. St. Peter's Church"
@@ -1156,6 +1166,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
                 <input
                   type="text"
                   required
+                  maxLength={50}
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl bg-[var(--s0)] border border-[var(--bd)] text-xs text-[var(--t1)] focus:outline-none focus:border-[var(--gold)]"
@@ -1168,6 +1179,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   required
                   maxLength={6}
                   value={pincode}

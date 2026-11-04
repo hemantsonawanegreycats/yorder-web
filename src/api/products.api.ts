@@ -69,6 +69,43 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
     ? bp.media.map((m: any) => m?.url).filter(Boolean)
     : [mainImage];
 
+  // Robust attribute extraction across array and object formats
+  const extractLabel = (v: any, idx: number): string => {
+    if (!v) return 'Standard';
+    if (Array.isArray(v.attributes) && v.attributes.length > 0) {
+      const match =
+        v.attributes.find((a: any) =>
+          /size|title|option|uk|us|waist|fit/i.test(a?.name || a?.key || '')
+        ) || v.attributes[0];
+      const val = match?.value ?? match?.title ?? match?.name;
+      if (val !== undefined && val !== null && String(val).trim()) return String(val).trim();
+    }
+    if (v.attributes && typeof v.attributes === 'object' && !Array.isArray(v.attributes)) {
+      const entries = Object.entries(v.attributes);
+      if (entries.length > 0) {
+        const match =
+          entries.find(([k]) => /size|title|option|uk|us|waist|fit/i.test(k)) || entries[0];
+        const val = match[1];
+        if (val !== undefined && val !== null && String(val).trim()) return String(val).trim();
+      }
+    }
+    if (v.size && String(v.size).trim()) return String(v.size).trim();
+    if (v.title && String(v.title).trim()) return String(v.title).trim();
+    if (v.name && String(v.name).trim()) return String(v.name).trim();
+    return `Variant ${idx + 1}`;
+  };
+
+  const rawSizes =
+    Array.isArray(bp.variableProducts) && bp.variableProducts.length > 0
+      ? bp.variableProducts.map(extractLabel)
+      : [];
+
+  const seenCounts: Record<string, number> = {};
+  const deduplicatedSizes = rawSizes.map((sz: string) => {
+    seenCounts[sz] = (seenCounts[sz] || 0) + 1;
+    return seenCounts[sz] > 1 ? `${sz} (${seenCounts[sz]})` : sz;
+  });
+
   return {
     id: String(bp.id ?? '0'),
     name: bp.name || 'Product',
@@ -80,14 +117,13 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
     off: discountPercent,
     img: mainImage,
     gal: gallery.length ? gallery : [mainImage],
-    sizes: Array.isArray(bp.variableProducts) && bp.variableProducts.length
-      ? bp.variableProducts.map((v: any) => v?.attributes?.title || v?.attributes?.size || 'Standard')
-      : ['Standard'],
+    sizes: deduplicatedSizes,
     stock: `${bp.availableQuantity ?? 1} in stock`,
     tagOk: (bp.availableQuantity ?? 1) > 0,
     note: bp.shortDescription || `Stock counted on the floor at ${vendor?.name || 'showroom'}. Verified by floor rep.`,
     vendorName: vendor?.name,
     rating: Number(bp.rating) || 4.8,
+    variableProducts: Array.isArray(bp.variableProducts) ? bp.variableProducts : [],
   };
 };
 

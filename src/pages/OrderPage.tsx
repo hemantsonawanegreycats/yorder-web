@@ -35,11 +35,13 @@ export const OrderPage: React.FC = () => {
   // Query all orders to locate latest if none specified
   const { data: allOrders, isLoading: allOrdersLoading } = useOrdersQuery();
 
-  const activeOrderId = urlOrderId
-    ? Number(urlOrderId)
-    : allOrders && allOrders.length > 0
-    ? allOrders[0].id
-    : null;
+  const rawId = urlOrderId ? Number(urlOrderId) : null;
+  const activeOrderId =
+    rawId && !isNaN(rawId) && rawId > 0
+      ? rawId
+      : allOrders && allOrders.length > 0
+      ? allOrders[0].id
+      : null;
 
   // Real order query with 10s live polling
   const { data: order, isLoading: orderLoading } = useOrderByIdQuery(activeOrderId, !!activeOrderId);
@@ -303,11 +305,11 @@ export const OrderPage: React.FC = () => {
               className="flex items-center justify-between p-4 rounded-[18px] bg-[var(--s1)] border border-[var(--bd)]"
             >
               <div className="flex items-center gap-4 min-w-0">
-                <div className="w-16 h-16 rounded-[12px] bg-[var(--s2)] overflow-hidden flex-shrink-0 border border-[var(--bd)]">
+                <div className="w-16 h-16 rounded-[12px] bg-white overflow-hidden flex-shrink-0 border border-[var(--bd)] p-1 flex items-center justify-center">
                   {it.product?.image ? (
-                    <img src={it.product.image} alt={it.product.name} className="w-full h-full object-cover" />
+                    <img src={it.product.image} alt={it.product.name} className="w-full h-full object-contain" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-[var(--t3)]">
+                    <div className="w-full h-full flex items-center justify-center text-xs text-neutral-400">
                       Bag
                     </div>
                   )}

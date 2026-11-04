@@ -19,9 +19,9 @@ interface CartState {
   selectedAddressId: number | null;
   appliedCoupon: AppliedCoupon | null;
   minOrderValue: number;
-  pendingAddProduct: { product: Product; size?: string } | null;
-  setPendingAddProduct: (item: { product: Product; size?: string } | null) => void;
-  addToBag: (product: Product, size?: string) => Promise<void>;
+  pendingAddProduct: { product: Product; size?: string; variantId?: number } | null;
+  setPendingAddProduct: (item: { product: Product; size?: string; variantId?: number } | null) => void;
+  addToBag: (product: Product, size?: string, variantId?: number) => Promise<void>;
   updateQuantity: (index: number, delta: number) => void;
   removeAt: (index: number) => void;
   clearBag: () => void;
@@ -88,6 +88,11 @@ export const useCartStore = create<CartState>()(
           return;
         }
 
+        if (newQty > 10) {
+          useAppStore.getState().showToast('Maximum order quantity is 10 units per item');
+          return;
+        }
+
         const updated = [...state.bag];
         updated[index] = { ...currentItem, quantity: newQty };
         set({ bag: updated });
@@ -124,11 +129,11 @@ export const useCartStore = create<CartState>()(
         set({ bag: [], appliedCoupon: null });
       },
 
-      addToBag: async (product: Product, size?: string) => {
+      addToBag: async (product: Product, size?: string, explicitVariantId?: number) => {
         // Option B: Require phone OTP login immediately when adding to bag
         const { isAuthenticated, setAuthModalOpen } = useAuthStore.getState();
         if (!isAuthenticated) {
-          set({ pendingAddProduct: { product, size } });
+          set({ pendingAddProduct: { product, size, variantId: explicitVariantId } });
           setAuthModalOpen(true);
           useAppStore.getState().showToast('Please log in with mobile OTP to add items to your bag');
           return;
@@ -161,9 +166,23 @@ export const useCartStore = create<CartState>()(
             }
           }
           if (cId) {
+            let variantId = explicitVariantId;
+            if (!variantId && product.variableProducts?.length) {
+              const matching = product.variableProducts.find(
+                (v: any) =>
+                  v.id === explicitVariantId ||
+                  v.size === selectedSize ||
+                  v.title === selectedSize ||
+                  v.attributes?.size === selectedSize ||
+                  v.attributes?.title === selectedSize
+              );
+              variantId = matching?.id;
+            }
+
             await apiClient.post(`/user/cart/${cId}/item`, {
               product_id: Number(product.id),
               quantity: 1,
+              ...(variantId ? { variant_id: Number(variantId) } : {}),
             });
             await get().syncBackendCart();
           }

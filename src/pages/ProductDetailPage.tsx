@@ -69,6 +69,11 @@ export const ProductDetailPage: React.FC = () => {
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : [];
 
+  const isFashionProduct = /fashion|apparel|clothing|shoes|footwear|sneakers|streetwear|t-shirt|shirt|shorts|hoodie|sweatpant/i.test(
+    `${product.cat} ${product.name}`
+  );
+  const showSizeGuide = isFashionProduct && sizes.length > 0;
+
   // Related products from same store
   const related = (allProducts || [])
     .filter((p) => p.sid === product.sid && p.id !== product.id)
@@ -81,16 +86,21 @@ export const ProductDetailPage: React.FC = () => {
 
   const handleAddCurrent = () => {
     const size = sizes.length > 0 ? sizes[selectedSizeIdx] || sizes[0] : '';
-    addToBag(product, size);
+    const vp = product.variableProducts?.[selectedSizeIdx];
+    addToBag(product, size, vp?.id);
   };
+
+  const activeVariant = product.variableProducts?.[selectedSizeIdx];
+  const activePrice = Number(activeVariant?.sellPrice ?? activeVariant?.price ?? product.price);
+  const activeMrp = Number(activeVariant?.price ?? activeVariant?.sellPrice ?? product.mrp);
 
   const handleAskRep = () => {
     if (!isAuthenticated) {
       setAuthModalOpen(true);
       return;
     }
-    setActiveChatId('t1');
-    go('chat');
+    const vendorParam = product.sid ? `?vendorId=${product.sid}` : '';
+    navigate(`/chat${vendorParam}`);
   };
 
   const jsonLd = {
@@ -127,88 +137,96 @@ export const ProductDetailPage: React.FC = () => {
       />
 
       {/* Top Breadcrumb Bar */}
-      <div className="flex items-center justify-between gap-4 h-[52px] px-4 md:px-[34px] border-b border-[var(--s2)]">
-        <div className="flex items-center gap-[14px] min-w-0">
-          <button
-            onClick={handleBack}
-            className="yc text-[14px] text-[var(--t2)] hover:text-[var(--t1)] transition-colors p-1"
-            title="Go back"
-            aria-label="Go back"
-          >
-            ←
-          </button>
-          <span className="font-normal text-[11px] text-[var(--t3)] truncate">
-            {product.cat} / {product.brand} / {product.name}
-          </span>
-        </div>
+      <div className="border-b border-[var(--s2)] bg-[var(--bg)]">
+        <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-4 h-[48px] px-4 md:px-8">
+          <div className="flex items-center gap-[12px] min-w-0">
+            <button
+              onClick={handleBack}
+              className="yc text-[14px] text-[var(--t2)] hover:text-[var(--t1)] transition-colors p-1"
+              title="Go back"
+              aria-label="Go back"
+            >
+              ←
+            </button>
+            <span className="font-normal text-[11px] text-[var(--t3)] truncate">
+              {product.cat} / {product.brand} / {product.name}
+            </span>
+          </div>
 
-        {store && (
-          <button
-            onClick={handleOpenStore}
-            className="yc font-medium text-[11px] leading-none tracking-[0.14em] text-[var(--gold)] uppercase hover:underline truncate max-w-[300px]"
-          >
-            {store.name} · {store.addr}
-          </button>
-        )}
+          {store && (
+            <button
+              onClick={handleOpenStore}
+              className="yc font-medium text-[10.5px] leading-none tracking-[0.14em] text-[var(--gold)] uppercase hover:underline truncate max-w-[300px]"
+            >
+              {store.name} · {store.addr}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Two-Column View */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]">
-        {/* Left Column: Gallery, Reassurance, Related */}
-        <div className="p-4 md:p-[32px_34px] flex flex-col md:flex-row gap-4 md:gap-5">
-          {/* Thumbnails */}
-          <div className="flex md:flex-col gap-3 w-full md:w-[84px] overflow-x-auto md:overflow-visible flex-shrink-0 order-2 md:order-1">
-            {gallery.map((img, idx) => {
-              const isSelected = activeGal === idx;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setActiveGal(idx)}
-                  className="yc relative aspect-square w-[70px] md:w-full rounded-[12px] overflow-hidden bg-[var(--s1)] flex-shrink-0 transition-all"
-                  style={{
-                    border: isSelected ? '1px solid var(--gold)' : '1px solid var(--bd)',
-                  }}
-                >
-                  <img
-                    src={img}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              );
-            })}
-          </div>
+      <div className="max-w-[1100px] mx-auto w-full px-4 md:px-6 py-4 md:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_370px] xl:grid-cols-[minmax(0,1fr)_390px] gap-6 lg:gap-8 items-start">
+          {/* Left Column: Gallery, Reassurance, Related */}
+          <div className="flex flex-col gap-4 min-w-0">
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Thumbnails (Only show if multiple images exist) */}
+              {gallery.length > 1 && (
+                <div className="flex md:flex-col gap-2 w-full md:w-[60px] overflow-x-auto md:overflow-visible flex-shrink-0 order-2 md:order-1">
+                  {gallery.map((img, idx) => {
+                    const isSelected = activeGal === idx;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveGal(idx)}
+                        className="yc relative aspect-square w-[52px] md:w-full rounded-[8px] overflow-hidden bg-white flex-shrink-0 transition-all p-1 flex items-center justify-center shadow-xs"
+                        style={{
+                          border: isSelected ? '1.5px solid var(--gold)' : '1px solid var(--bd)',
+                        }}
+                      >
+                        <img
+                          src={img}
+                          alt=""
+                          className="w-full h-full object-contain"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-          {/* Main Visual Display */}
-          <div className="flex-1 flex flex-col gap-4 order-1 md:order-2 min-w-0">
-            <div className="relative aspect-[1.1] w-full rounded-[22px] overflow-hidden bg-[var(--s1)] border border-[var(--bd)]">
-              <img
-                src={currentImage}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {/* Shelf Tag Pill */}
-              <div className="absolute left-[18px] top-[18px] flex items-center gap-2 px-[13px] py-[7px] rounded-[20px] bg-[#0B0B0C]/70 backdrop-blur-[8px] font-medium text-[9px] tracking-[0.14em] text-[#9BD8A0]">
-                ● ON THE SHELF NOW
+              {/* Main Visual Display - Compact, White Background, Never Oversized */}
+              <div className="flex-1 flex flex-col gap-3 order-1 md:order-2 min-w-0">
+                <div className="relative aspect-square max-h-[360px] md:max-h-[380px] w-full rounded-[16px] overflow-hidden bg-white border border-[var(--bd)] flex items-center justify-center p-4">
+                  <img
+                    src={currentImage}
+                    alt={product.name}
+                    className="max-h-[92%] max-w-[92%] object-contain"
+                  />
+                  {/* Shelf Tag Pill */}
+                  <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#9BD8A0] border border-white/10 shadow-sm">
+                    ● ON THE SHELF NOW
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Two Reassurance Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-[16px] bg-[var(--s1)] border border-[var(--bd)] flex items-center gap-[14px]">
-                <div className="w-[34px] h-[34px] rounded-[10px] bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-[14px] text-[var(--gold)] flex-shrink-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="p-3 rounded-[12px] bg-[var(--s1)] border border-[var(--bd)] flex items-center gap-2.5">
+                <div className="w-[28px] h-[28px] rounded-[8px] bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-[12px] text-[var(--gold)] flex-shrink-0">
                   ▤
                 </div>
-                <div className="font-normal text-[11px] leading-[1.6] text-[var(--t2)]">
+                <div className="font-normal text-[10.5px] leading-[1.45] text-[var(--t2)] line-clamp-2">
                   {product.note}
                 </div>
               </div>
 
-              <div className="p-4 rounded-[16px] bg-[var(--s1)] border border-[var(--bd)] flex items-center gap-[14px]">
-                <div className="w-[34px] h-[34px] rounded-[10px] bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-[14px] text-[var(--gold)] flex-shrink-0">
+              <div className="p-3 rounded-[12px] bg-[var(--s1)] border border-[var(--bd)] flex items-center gap-2.5">
+                <div className="w-[28px] h-[28px] rounded-[8px] bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-[12px] text-[var(--gold)] flex-shrink-0">
                   ↺
                 </div>
-                <div className="font-normal text-[11px] leading-[1.6] text-[var(--t2)]">
+                <div className="font-normal text-[10.5px] leading-[1.45] text-[var(--t2)]">
                   Try at your door. The rider waits ten minutes; nothing is charged until you keep it.
                 </div>
               </div>
@@ -216,11 +234,11 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Also on this Shelf */}
             {related.length > 0 && (
-              <div className="pt-4">
-                <h3 className="font-semibold text-[15px] text-[var(--t1)] mb-4">
+              <div className="pt-2">
+                <h3 className="font-semibold text-[14px] text-[var(--t1)] mb-3">
                   Also on this shelf
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {related.map((rp) => (
                     <div
                       key={rp.id}
@@ -231,17 +249,17 @@ export const ProductDetailPage: React.FC = () => {
                       }}
                       className="yc flex flex-col cursor-pointer group"
                     >
-                      <div className="aspect-square rounded-[14px] overflow-hidden bg-[var(--s1)] border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors">
+                      <div className="aspect-square rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors p-1.5 flex items-center justify-center">
                         <img
                           src={rp.img}
                           alt={rp.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                         />
                       </div>
-                      <div className="font-medium text-[11px] leading-[1.4] text-[var(--t2)] group-hover:text-[var(--t1)] mt-[10px] line-clamp-1">
+                      <div className="font-medium text-[10.5px] leading-[1.35] text-[var(--t2)] group-hover:text-[var(--t1)] mt-[7px] line-clamp-1">
                         {rp.name}
                       </div>
-                      <div className="font-semibold text-[12px] text-[var(--t1)] mt-[7px]">
+                      <div className="font-semibold text-[11.5px] text-[var(--t1)] mt-[4px]">
                         {rupee(rp.price)}
                       </div>
                     </div>
@@ -250,150 +268,177 @@ export const ProductDetailPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
 
-        {/* Right Purchasing Column */}
-        <aside className="p-6 md:p-[32px_28px_36px] border-t lg:border-t-0 lg:border-l border-[var(--s2)] flex flex-col justify-start">
-          <div className="font-medium text-[9.5px] leading-none tracking-[0.16em] text-[var(--gold)] uppercase">
-            {product.brand}
-          </div>
-          <h1 className="font-semibold text-[26px] md:text-[30px] leading-[1.15] tracking-[-0.03em] text-[var(--t1)] mt-[14px]">
-            {product.name}
-          </h1>
+          {/* Right Purchasing Column */}
+          <aside className="lg:sticky lg:top-[76px] flex flex-col justify-start">
+            <div className="font-medium text-[9px] leading-none tracking-[0.16em] text-[var(--gold)] uppercase">
+              {product.brand}
+            </div>
+            <h1 className="font-semibold text-[22px] md:text-[24px] leading-[1.2] tracking-[-0.025em] text-[var(--t1)] mt-2.5">
+              {product.name}
+            </h1>
 
-          {/* Pricing */}
-          <div className="flex items-baseline gap-3 mt-4">
-            <span className="font-semibold text-[26px] leading-none tracking-[-0.02em] text-[var(--t1)]">
-              {rupee(product.price)}
-            </span>
-            {product.mrp > product.price && (
-              <span className="font-normal text-[13px] text-[var(--t4)] line-through">
-                {rupee(product.mrp)}
+            {/* Pricing */}
+            <div className="flex items-baseline gap-2.5 mt-2.5">
+              <span className="font-semibold text-[20px] md:text-[22px] leading-none tracking-[-0.02em] text-[var(--t1)]">
+                {rupee(activePrice)}
               </span>
-            )}
-            <span className="font-medium text-[11px] text-[var(--ok)]">
-              {product.off}
-            </span>
-          </div>
-
-          <div className="h-[1px] bg-[var(--s2)] my-[26px]" />
-
-          {/* Sizes */}
-          <div className="flex items-baseline justify-between mb-[14px]">
-            <div className="font-semibold text-[13.5px] text-[var(--t1)]">
-              {sizes.length > 0 ? 'Select size' : 'One variant on this shelf'}
+              {activeMrp > activePrice && (
+                <span className="font-normal text-[11.5px] text-[var(--t4)] line-through">
+                  {rupee(activeMrp)}
+                </span>
+              )}
+              <span className="font-medium text-[10px] text-[var(--ok)]">
+                {product.off}
+              </span>
             </div>
-            <button
-              onClick={() => showToast('Standard UK/US sizing applies.')}
-              className="yc font-medium text-[11px] text-[var(--gold)] hover:underline"
-            >
-              Size guide
-            </button>
-          </div>
 
-          {sizes.length > 0 ? (
-            <div className="grid grid-cols-4 gap-[10px]">
-              {sizes.map((sz, idx) => {
-                const isSelected = selectedSizeIdx === idx;
-                const isOutOfStock = idx === 3;
-                return (
-                  <button
-                    key={sz}
-                    disabled={isOutOfStock}
-                    onClick={() => setSelectedSizeIdx(idx)}
-                    className="yc h-[58px] rounded-[13px] flex flex-col items-center justify-center gap-1.5 transition-all"
-                    style={{
-                      background: isSelected ? 'var(--acc)' : 'transparent',
-                      border: isSelected ? 'none' : isOutOfStock ? '1px solid var(--s2)' : '1px solid var(--bd)',
-                      opacity: isOutOfStock ? 0.55 : 1,
-                      cursor: isOutOfStock ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    <span
-                      className="font-semibold text-[13px] leading-none"
-                      style={{
-                        color: isSelected ? 'var(--on-acc)' : isOutOfStock ? 'var(--t3)' : 'var(--t1)',
-                      }}
+            {/* Sizes / Variants (Only shown if real variants exist) */}
+            {sizes.length > 0 && (
+              <>
+                <div className="h-[1px] bg-[var(--s2)] my-3.5" />
+                <div className="flex items-baseline justify-between mb-2">
+                  <div className="font-semibold text-[12px] text-[var(--t1)]">
+                    Select {isFashionProduct ? 'size' : 'option'}
+                  </div>
+                  {showSizeGuide && (
+                    <button
+                      onClick={() => showToast('Standard UK/US sizing applies.')}
+                      className="yc font-medium text-[10px] text-[var(--gold)] hover:underline"
                     >
-                      {sz}
-                    </span>
-                    <span className="font-normal text-[9px] leading-none text-[var(--t3)]">
-                      In stock
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-3.5 rounded-[12px] bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t2)]">
-              Standard size available. Ready for immediate dispatch.
-            </div>
-          )}
+                      Size guide
+                    </button>
+                  )}
+                </div>
 
-          {/* Real On-Demand Showroom Dispatch */}
-          <div className="p-[16px_18px] rounded-[16px] bg-[var(--s1)] border border-[var(--bd)] mt-[24px]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse" />
-                <span className="font-semibold text-[13px] text-[var(--t1)]">
-                  Instant Showroom Dispatch
+                <div className="grid grid-cols-4 gap-2">
+                  {sizes.map((sz, idx) => {
+                    const isSelected = selectedSizeIdx === idx;
+                    const vp = product.variableProducts?.[idx];
+                    const isOutOfStock =
+                      vp && typeof vp.availableQuantity === 'number'
+                        ? vp.availableQuantity <= 0
+                        : !product.tagOk;
+                    return (
+                      <button
+                        key={`${sz}-${idx}`}
+                        disabled={isOutOfStock}
+                        onClick={() => setSelectedSizeIdx(idx)}
+                        className="yc h-[44px] rounded-[9px] flex flex-col items-center justify-center gap-0.5 transition-all"
+                        style={{
+                          background: isSelected ? 'var(--acc)' : 'transparent',
+                          border: isSelected
+                            ? 'none'
+                            : isOutOfStock
+                            ? '1px solid var(--s2)'
+                            : '1px solid var(--bd)',
+                          opacity: isOutOfStock ? 0.55 : 1,
+                          cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        <span
+                          className="font-semibold text-[11.5px] leading-none"
+                          style={{
+                            color: isSelected ? 'var(--on-acc)' : isOutOfStock ? 'var(--t3)' : 'var(--t1)',
+                          }}
+                        >
+                          {sz}
+                        </span>
+                        <span className="font-normal text-[8px] leading-none text-[var(--t3)]">
+                          {isOutOfStock ? 'Out of stock' : 'In stock'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Real On-Demand Showroom Dispatch */}
+            <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse" />
+                  <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                    Instant Showroom Dispatch
+                  </span>
+                </div>
+                <span className="font-medium text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 px-2 py-0.5 rounded-full border border-[var(--ok)]/20">
+                  {isFashionProduct ? 'Free Trial' : 'Verified Stock'}
                 </span>
               </div>
-              <span className="font-medium text-[11px] text-[var(--ok)] bg-[var(--ok)]/10 px-2 py-0.5 rounded-full border border-[var(--ok)]/20">
-                Free Trial
-              </span>
-            </div>
-            <div className="text-[11.5px] text-[var(--t2)] mt-2 leading-[1.5]">
-              Dispatched directly from <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span>. Rider waits while you try it on.
-            </div>
-            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[var(--bd)] text-[10.5px] text-[var(--t3)] font-mono">
-              <span>⏱ {store?.eta || '45 min'}</span>
-              <span>·</span>
-              <span>📍 {store?.addr || 'Bandra West'}</span>
-              <span>·</span>
-              <span>🚪 Try at door</span>
-            </div>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="flex items-center gap-3 mt-[26px]">
-            <button
-              onClick={handleAddCurrent}
-              className="yc flex-1 h-[48px] rounded-[24px] bg-[var(--acc)] flex items-center justify-center gap-2.5 shadow-md hover:opacity-90 active:scale-95 transition-all"
-            >
-              <span className="font-semibold text-[13px] text-[var(--on-acc)]">
-                Add to bag
-              </span>
-              <span className="font-medium text-[11.5px] text-[var(--t3)]">
-                {rupee(product.price)}
-              </span>
-            </button>
-            <button
-              onClick={handleAskRep}
-              className="yc h-[48px] px-[22px] rounded-[24px] border border-[var(--bdw)] flex items-center font-semibold text-[12.5px] text-[var(--tw)] hover:bg-[var(--sw)] active:scale-95 transition-all flex-shrink-0"
-            >
-              Ask the shop
-            </button>
-          </div>
-
-          {/* Rep Assurance */}
-          {store && (
-            <div className="mt-[22px] p-4 rounded-[16px] bg-[var(--s0)] border border-[var(--bd)] flex items-center gap-[13px]">
-              <div className="relative w-[38px] h-[38px] rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-medium text-[12px] text-[var(--tw)] flex-shrink-0">
-                {store.repIni}
-                <span className="absolute right-0 bottom-0 w-[10px] h-[10px] rounded-full bg-[var(--ok)] border-2 border-[var(--s0)]" />
+              <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
+                Dispatched directly from <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span>.{' '}
+                {isFashionProduct
+                  ? 'Rider waits while you try it on.'
+                  : 'Delivered directly from the showroom floor.'}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-[12px] text-[var(--t1)] truncate">
-                  {store.repName} can hold this
-                </div>
-                <div className="font-normal text-[10px] text-[var(--t3)] mt-[6px]">
-                  One hour, no card needed
-                </div>
+              <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                <span>⏱ {store?.eta || '45 min'}</span>
+                <span>·</span>
+                <span>📍 {store?.addr || 'Bandra West'}</span>
+                <span>·</span>
+                <span>🚪 {isFashionProduct ? 'Try at door' : 'Doorstep delivery'}</span>
               </div>
             </div>
-          )}
-        </aside>
+
+            {/* Action CTAs */}
+            <div className="flex items-center gap-2.5 mt-4">
+              <button
+                disabled={
+                  activeVariant && typeof activeVariant.availableQuantity === 'number'
+                    ? activeVariant.availableQuantity <= 0
+                    : !product.tagOk
+                }
+                onClick={handleAddCurrent}
+                className="yc flex-1 h-[44px] rounded-[22px] flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background:
+                    activeVariant && typeof activeVariant.availableQuantity === 'number' && activeVariant.availableQuantity <= 0
+                      ? 'var(--s2)'
+                      : 'var(--acc)',
+                  color:
+                    activeVariant && typeof activeVariant.availableQuantity === 'number' && activeVariant.availableQuantity <= 0
+                      ? 'var(--t3)'
+                      : 'var(--on-acc)',
+                }}
+              >
+                <span className="font-semibold text-[12.5px]">
+                  {activeVariant && typeof activeVariant.availableQuantity === 'number' && activeVariant.availableQuantity <= 0
+                    ? 'Out of stock'
+                    : 'Add to bag'}
+                </span>
+                <span className="font-medium text-[11px] opacity-80">
+                  {rupee(activePrice)}
+                </span>
+              </button>
+              <button
+                onClick={handleAskRep}
+                className="yc h-[44px] px-4 rounded-[22px] border border-[var(--bdw)] flex items-center font-semibold text-[12px] text-[var(--tw)] hover:bg-[var(--sw)] active:scale-95 transition-all flex-shrink-0"
+              >
+                Ask the shop
+              </button>
+            </div>
+
+            {/* Rep Assurance */}
+            {store && (
+              <div className="mt-3.5 p-3 rounded-[14px] bg-[var(--s0)] border border-[var(--bd)] flex items-center gap-2.5">
+                <div className="relative w-[34px] h-[34px] rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-medium text-[11px] text-[var(--tw)] flex-shrink-0">
+                  {store.repIni}
+                  <span className="absolute right-0 bottom-0 w-[8px] h-[8px] rounded-full bg-[var(--ok)] border-2 border-[var(--s0)]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-[11.5px] text-[var(--t1)] truncate">
+                    {store.repName} can hold this
+                  </div>
+                  <div className="font-normal text-[9.5px] text-[var(--t3)] mt-0.5">
+                    One hour, no card needed
+                  </div>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
     </div>
   );

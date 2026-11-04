@@ -171,13 +171,14 @@ export const BagPage: React.FC = () => {
       return;
     }
 
-    if (!selectedAddressId && (!addresses || addresses.length === 0)) {
+    const userAddress = addresses?.find((a) => a.id === selectedAddressId) || addresses?.[0];
+    if (!userAddress?.id) {
       setShowAddressModal(true);
-      showToast('Please add a delivery address to proceed');
+      showToast('Please add or select a delivery address to proceed');
       return;
     }
 
-    const effectiveAddressId = selectedAddressId || (addresses && addresses[0]?.id) || 1;
+    const effectiveAddressId = userAddress.id;
     let targetCartId = cartId;
 
     setIsSubmittingOrder(true);
@@ -370,12 +371,12 @@ export const BagPage: React.FC = () => {
                         >
                           <div
                             onClick={() => handleOpenProduct(prod.id)}
-                            className="w-[74px] h-[74px] rounded-[12px] overflow-hidden bg-[var(--s2)] flex-shrink-0 cursor-pointer border border-[var(--bd)]"
+                            className="w-[74px] h-[74px] rounded-[12px] overflow-hidden bg-white flex-shrink-0 cursor-pointer border border-[var(--bd)] p-1 flex items-center justify-center"
                           >
                             <img
                               src={prod.img}
                               alt={prod.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain"
                             />
                           </div>
 
@@ -517,17 +518,19 @@ export const BagPage: React.FC = () => {
             <div className="flex gap-2">
               <input
                 type="text"
+                maxLength={20}
                 placeholder="Enter coupon code (e.g. YORDER50)"
+                aria-label="Coupon code"
                 value={couponInput}
-                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                className="flex-1 px-3 py-2 text-xs rounded-xl bg-[var(--s1)] border border-[var(--bd)] text-[var(--t1)] focus:outline-none focus:border-[var(--gold)]"
+                onChange={(e) => setCouponInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                className="flex-1 px-3 py-2 text-xs rounded-xl bg-[var(--s1)] border border-[var(--bd)] text-[var(--t1)] focus:outline-none focus:border-[var(--gold)] font-mono tracking-wider"
               />
               <button
                 onClick={handleApplyCoupon}
                 disabled={!couponInput.trim() || validateCouponMutation.isPending}
                 className="px-4 py-2 rounded-xl bg-[var(--gold)] text-black text-xs font-semibold hover:opacity-90 disabled:opacity-50"
               >
-                {validateCouponMutation.isPending ? '...' : 'APPLY'}
+                {validateCouponMutation.isPending ? 'Verifying...' : 'APPLY'}
               </button>
             </div>
           )}

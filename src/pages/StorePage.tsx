@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '../stores/useAppStore';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -6,10 +6,25 @@ import { useCartStore } from '../stores/useCartStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useVendorsQuery, useVendorByIdQuery, useToggleFollowMutation, useGetVendorFollowStatusQuery } from '../api/vendors.api';
 import { useProductsQuery } from '../api/products.api';
-import { rupee, formatClock } from '../utils/formatters';
+import { useAddressesQuery } from '../api/address.api';
+import { rupee } from '../utils/formatters';
 import { SEO } from '../components/common/SEO';
 import { ProductCardSkeleton, StoreHeaderSkeleton, ErrorState } from '../components/common/Skeleton';
 import { Store } from '../types';
+
+const calculateHaversineDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 export const StorePage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,6 +56,102 @@ export const StorePage: React.FC = () => {
 
   const { isAuthenticated, setAuthModalOpen } = useAuthStore();
   const { data: followStatusData } = useGetVendorFollowStatusQuery(store?.id, isAuthenticated);
+
+  const { data: userAddresses = [] } = useAddressesQuery();
+  const selectedAddress = userAddresses[0];
+
+  // Safe Store Fallback (Guarantees no null pointer exception)
+  const currentStore: Store = store || {
+    id: effectiveSid || '1',
+    name: 'Showroom',
+    ini: 'SH',
+    cat: 'Specialty Showroom',
+    addr: 'Mumbai, Maharashtra',
+    rating: 'New',
+    eta: '45 min',
+    dist: 'Nearby',
+    count: '',
+    hours: 'OPEN TODAY',
+    img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=75',
+    repName: 'Floor Team',
+    repIni: 'FT',
+    repLine: 'Floor team is on the floor',
+    meta: 'Bandra · Verified showroom',
+    isOnline: true,
+  };
+
+  const { distanceKmText, travelTimeText, deliveryEtaText } = useMemo(() => {
+    if (!currentStore.lat || !currentStore.lng) {
+      return {
+        distanceKmText: currentStore.dist || 'Nearby',
+        travelTimeText: 'In your area',
+        deliveryEtaText: currentStore.eta || '45 min',
+      };
+    }
+
+    const userLat = selectedAddress?.latitude ? Number(selectedAddress.latitude) : 19.0596;
+    const userLng = selectedAddress?.longitude ? Number(selectedAddress.longitude) : 72.8295;
+
+    if (!Number.isFinite(userLat) || !Number.isFinite(userLng)) {
+      return {
+        distanceKmText: currentStore.dist || 'Nearby',
+        travelTimeText: 'In your area',
+        deliveryEtaText: currentStore.eta || '45 min',
+      };
+    }
+
+    const km = calculateHaversineDistanceKm(userLat, userLng, currentStore.lat, currentStore.lng);
+    const mins = Math.max(5, Math.round(km * 10));
+
+    return {
+      distanceKmText: `${km.toFixed(1)} km`,
+      travelTimeText: `${mins} min away`,
+      deliveryEtaText: km < 5 ? '45 min' : '90 min',
+    };
+  }, [currentStore.lat, currentStore.lng, currentStore.dist, currentStore.eta, selectedAddress]);
+
+  // Real store inventory from backend: prefer vendor-specific products, fallback to vendor-matched products
+  const effectiveStock = useMemo(() => {
+    if (storeProducts && storeProducts.length > 0) return storeProducts;
+    return (allProducts || []).filter(
+      (p) =>
+        String(p.sid) === String(currentStore.id) ||
+        (p.brand && currentStore.name && p.brand.toLowerCase() === currentStore.name.toLowerCase())
+    );
+  }, [storeProducts, allProducts, currentStore.id, currentStore.name]);
+
+  // Real shelf tabs dynamically derived from actual store products
+  const catNames = useMemo(() => {
+    return Array.from(new Set(effectiveStock.map((p) => p.cat || 'General'))).filter(Boolean);
+  }, [effectiveStock]);
+
+  const tabDefs = useMemo(() => {
+    return [
+      { label: 'All', cat: null, count: effectiveStock.length },
+      ...catNames.map((cName) => ({
+        label: cName,
+        cat: cName,
+        count: effectiveStock.filter((p) => (p.cat || 'General').toLowerCase() === cName.toLowerCase()).length,
+      })),
+    ];
+  }, [effectiveStock, catNames]);
+
+  const currentTab = tabDefs[activeTab] || tabDefs[0];
+  const shelfProducts = useMemo(() => {
+    return currentTab?.cat
+      ? effectiveStock.filter((p) => (p.cat || 'General').toLowerCase() === currentTab.cat!.toLowerCase())
+      : effectiveStock;
+  }, [effectiveStock, currentTab]);
+
+  const bagItems = useMemo(() => {
+    return bag
+      .map((b) => (allProducts || []).find((p) => p.id === b.pid))
+      .filter(Boolean);
+  }, [bag, allProducts]);
+
+  const bagTotal = useMemo(() => {
+    return bagItems.reduce((acc, p) => acc + (p?.price || 0), 0);
+  }, [bagItems]);
 
   const isFollowing =
     followStatusData?.data?.is_following !== undefined
@@ -94,65 +205,13 @@ export const StorePage: React.FC = () => {
     );
   }
 
-  // Safe Store Fallback (Guarantees no null pointer exception)
-  const currentStore: Store = store || {
-    id: effectiveSid || '1',
-    name: 'Showroom',
-    ini: 'SH',
-    cat: 'Specialty Showroom',
-    addr: 'Mumbai, Maharashtra',
-    rating: '4.8',
-    eta: '45 min',
-    dist: '1.8 km',
-    count: '150',
-    hours: 'OPEN TODAY',
-    browsing: '8',
-    img: '/assets/map-cluster.jpg',
-    repName: 'Floor Team',
-    repIni: 'FT',
-    repLine: 'Floor team is on the floor',
-    meta: 'Bandra · 1.8 km · 150 items',
-    isOnline: true,
-  };
-
-  // Real store inventory from backend: prefer vendor-specific products, fallback to vendor-matched products
-  const effectiveStock =
-    storeProducts && storeProducts.length > 0
-      ? storeProducts
-      : (allProducts || []).filter(
-          (p) =>
-            String(p.sid) === String(currentStore.id) ||
-            (p.brand && currentStore.name && p.brand.toLowerCase() === currentStore.name.toLowerCase())
-        );
-
-  // Real shelf tabs dynamically derived from actual store products
-  const catNames = Array.from(new Set(effectiveStock.map((p) => p.cat || 'General'))).filter(Boolean);
-  const tabDefs = [
-    { label: 'All', cat: null, count: effectiveStock.length },
-    ...catNames.map((cName) => ({
-      label: cName,
-      cat: cName,
-      count: effectiveStock.filter((p) => (p.cat || 'General').toLowerCase() === cName.toLowerCase()).length,
-    })),
-  ];
-
-  const currentTab = tabDefs[activeTab] || tabDefs[0];
-  const shelfProducts = currentTab?.cat
-    ? effectiveStock.filter((p) => (p.cat || 'General').toLowerCase() === currentTab.cat!.toLowerCase())
-    : effectiveStock;
-
-  const bagItems = bag
-    .map((b) => (allProducts || []).find((p) => p.id === b.pid))
-    .filter(Boolean);
-  const bagTotal = bagItems.reduce((acc, p) => acc + (p?.price || 0), 0);
-
   const handleAskRep = () => {
     if (!isAuthenticated) {
       setAuthModalOpen(true);
       return;
     }
-    setActiveChatId('t1');
-    go('chat');
+    const vendorParam = currentStore.id ? `?vendorId=${currentStore.id}` : '';
+    navigate(`/chat${vendorParam}`);
   };
 
   const handleOpenProduct = (productId: string | number) => {
@@ -242,9 +301,6 @@ export const StorePage: React.FC = () => {
                   <span className="w-[5px] h-[5px] rounded-full bg-[#9BD8A0] animate-pulse" />
                   {currentStore.hours}
                 </span>
-                <span className="px-[11px] py-[6px] rounded-[14px] bg-[#0B0B0C]/60 backdrop-blur-[8px] border border-white/15 font-medium text-[8.5px] tracking-[0.14em] text-[#CFCBC3]">
-                  {currentStore.browsing} BROWSING NOW
-                </span>
               </div>
               <h1 className="font-semibold text-[28px] md:text-[38px] leading-none tracking-[-0.035em] text-[#F7F3EC]">
                 {currentStore.name}
@@ -255,29 +311,35 @@ export const StorePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Bar */}
+          {/* Stats Bar (Synced with mobile app live metrics) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 lg:gap-8 flex-shrink-0 pb-[6px]">
             <div>
               <div className="font-semibold text-[17px] leading-none text-[#C8A06A]">
-                ★ {currentStore.rating}
+                ★ {currentStore.rating && currentStore.rating !== 'New' ? currentStore.rating : 'New'}
               </div>
-              <div className="font-normal text-[10px] text-[#9A968E] mt-2">ratings</div>
+              <div className="font-normal text-[10px] text-[#9A968E] mt-2">
+                {currentStore.ratingCount && currentStore.ratingCount > 0
+                  ? `${currentStore.ratingCount} ratings`
+                  : 'Showroom'}
+              </div>
             </div>
             <div>
               <div className="font-semibold text-[17px] leading-none text-[#F5F3F0]">
-                {currentStore.dist}
+                {distanceKmText}
               </div>
-              <div className="font-normal text-[10px] text-[#9A968E] mt-2">away</div>
+              <div className="font-normal text-[10px] text-[#9A968E] mt-2">
+                {travelTimeText}
+              </div>
             </div>
             <div>
               <div className="font-semibold text-[17px] leading-none text-[#F5F3F0]">
-                {currentStore.eta}
+                {deliveryEtaText}
               </div>
               <div className="font-normal text-[10px] text-[#9A968E] mt-2">home delivery</div>
             </div>
             <div>
               <div className="font-semibold text-[17px] leading-none text-[#F5F3F0]">
-                {currentStore.count}
+                {effectiveStock.length > 0 ? effectiveStock.length : (currentStore.count || 'Active')}
               </div>
               <div className="font-normal text-[10px] text-[#9A968E] mt-2">on the floor</div>
             </div>
@@ -328,23 +390,23 @@ export const StorePage: React.FC = () => {
           </div>
 
           {shelfProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {shelfProducts.map((p) => (
                 <div key={p.id} className="flex flex-col group text-left">
                   <div
                     onClick={() => handleOpenProduct(p.id)}
-                    className="yc relative aspect-[0.95] rounded-[16px] overflow-hidden bg-[var(--s1)] border border-[var(--bd)] group-hover:border-[var(--bd2)] transition-colors cursor-pointer"
+                    className="yc relative aspect-square max-h-[195px] rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors cursor-pointer flex items-center justify-center p-2.5"
                   >
                     <img
                       src={p.img}
                       alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                     />
                     {/* Stock Tag Badge */}
                     <div
-                      className="absolute left-[11px] top-[11px] px-[10px] py-[5px] rounded-[11px] font-medium text-[9px] leading-none backdrop-blur-[8px]"
+                      className="absolute left-[8px] top-[8px] px-[8px] py-[4px] rounded-[9px] font-medium text-[8.5px] leading-none backdrop-blur-[8px] shadow-sm"
                       style={{
-                        background: 'rgba(11,11,12,.72)',
+                        background: 'rgba(11,11,12,.85)',
                         color: p.tagOk ? '#9BD8A0' : '#C8A06A',
                       }}
                     >
@@ -352,25 +414,25 @@ export const StorePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-[var(--t3)] mt-[13px] mb-[7px]">
+                  <div className="text-[9.5px] text-[var(--t3)] mt-[10px] mb-[4px]">
                     {p.brand}
                   </div>
                   <button
                     onClick={() => handleOpenProduct(p.id)}
-                    className="yc font-medium text-[12.5px] leading-[1.4] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
+                    className="yc font-medium text-[12px] leading-[1.35] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
                   >
                     {p.name}
                   </button>
 
-                  <div className="flex items-center justify-between mt-[13px]">
-                    <span className="font-semibold text-[14.5px] leading-none text-[var(--t1)]">
+                  <div className="flex items-center justify-between mt-[10px]">
+                    <span className="font-semibold text-[13.5px] leading-none text-[var(--t1)]">
                       {rupee(p.price)}
                     </span>
                     <button
                       onClick={() => addToBag(p)}
-                      className="yc h-[32px] px-4 rounded-[16px] bg-[var(--acc)] flex items-center font-semibold text-[11px] leading-none text-[var(--on-acc)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                      className="yc h-[28px] px-3 rounded-[14px] bg-[var(--acc)] flex items-center font-semibold text-[11px] leading-none text-[var(--on-acc)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
                     >
-                      Add
+                      + Bag
                     </button>
                   </div>
                 </div>
@@ -378,8 +440,8 @@ export const StorePage: React.FC = () => {
             </div>
           ) : (
             productsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {[...Array(6)].map((_, i) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {[...Array(8)].map((_, i) => (
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
@@ -396,7 +458,7 @@ export const StorePage: React.FC = () => {
           )}
         </div>
 
-        {/* Right Sidebar: Floor Rep, Details, Drop */}
+        {/* Right Sidebar: Floor Rep, Details, Real Store Info */}
         <aside className="p-4 md:p-[28px_24px] border-t lg:border-t-0 lg:border-l border-[var(--s2)] flex flex-col gap-[18px]">
           {/* Floor Rep Card */}
           <div className="p-[18px] rounded-[18px] bg-[var(--s0)] border border-[var(--bd)]">
@@ -407,21 +469,22 @@ export const StorePage: React.FC = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-[12.5px] text-[var(--t1)] truncate">
-                  {currentStore.repLine}
+                  {currentStore.repName} is on the floor
                 </div>
-                <div className="font-normal text-[10.5px] text-[var(--t3)] mt-[6px]">
-                  Replies in ~2 min
+                <div className="font-normal text-[10.5px] text-[var(--ok)] mt-1 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--ok)] animate-pulse" />
+                  Live showroom rep · Online
                 </div>
               </div>
             </div>
 
             <div className="font-normal text-[11.5px] leading-[1.6] text-[var(--t2)] mt-[14px]">
-              Will walk the wall, send photos, and hold something for an hour.
+              Chat directly with floor staff at {currentStore.name}. Ask for stock checks, size availability, or live shelf photos.
             </div>
 
             <button
               onClick={handleAskRep}
-              className="yc w-full h-[40px] rounded-[20px] bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-semibold text-[11.5px] text-[var(--tw)] mt-[14px] hover:brightness-110 active:scale-98 transition-all"
+              className="yc w-full h-[40px] rounded-[20px] bg-[var(--acc)] text-[var(--on-acc)] flex items-center justify-center font-semibold text-[11.5px] mt-[14px] hover:opacity-90 active:scale-98 transition-all shadow-sm"
             >
               Ask {currentStore.repName}
             </button>
@@ -430,10 +493,10 @@ export const StorePage: React.FC = () => {
           {/* Real Inventory Status */}
           <div className="p-[18px] rounded-[18px] bg-[var(--s1)] border border-[var(--bd)]">
             <div className="font-medium text-[9px] leading-none tracking-[0.16em] text-[var(--gold)]">
-              {currentStore.count} ITEMS ON THE SHELF
+              {effectiveStock.length} ITEMS ON THE SHELF
             </div>
             <div className="font-normal text-[10.5px] leading-[1.6] text-[var(--t3)] mt-[10px]">
-              Counted 12 min ago · 38 items went out today
+              Verified showroom inventory available for immediate doorstep trial.
             </div>
             <div className="h-[1px] bg-[var(--bd)] my-4" />
             <div className="flex items-center justify-between">
@@ -442,33 +505,17 @@ export const StorePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Live Drop in Store Widget */}
-          <div className="p-5 rounded-[20px] bg-[var(--s0)] border border-[#C8A06A]/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-medium text-[9px] tracking-[0.16em] text-[var(--gold)]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[var(--gold)] animate-ping" />
-                LIVE DROP IN STORE
-              </div>
-              <div className="font-mono font-medium text-[11px] text-[var(--tw)]">
-                {formatClock(8009)}
-              </div>
+          {/* Showroom Details & Operating Hours (100% Real from Backend Vendor) */}
+          <div className="p-5 rounded-[20px] bg-[var(--s0)] border border-[var(--bd)] flex flex-col gap-3">
+            <span className="font-medium text-[9px] tracking-[0.16em] text-[var(--gold)]">
+              SHOWROOM DETAILS
+            </span>
+            <div className="text-xs text-[var(--t1)] leading-relaxed">
+              📍 {currentStore.addr}
             </div>
-            <div className="font-normal text-[12px] leading-[1.65] text-[var(--t2)] mt-[14px]">
-              40 pairs of the Faded Archive land on the front wall at 6 PM. Followers get first pick for 30 minutes.
-            </div>
-            <div className="flex flex-col gap-[10px] mt-4">
-              <button
-                onClick={() => showToast('You are 12th in the queue for the 6 PM drop')}
-                className="yc h-[40px] rounded-[20px] bg-[var(--acc)] flex items-center justify-center font-semibold text-[11.5px] text-[var(--on-acc)] hover:opacity-90 active:scale-95 shadow-sm"
-              >
-                Join the queue
-              </button>
-              <button
-                onClick={() => showToast('Reminder set for 6 PM')}
-                className="yc h-[40px] rounded-[20px] bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-semibold text-[11.5px] text-[var(--tw)] hover:brightness-110 active:scale-95"
-              >
-                Remind me
-              </button>
+            <div className="text-xs text-[var(--t3)] flex items-center justify-between pt-2 border-t border-[var(--bd)]">
+              <span>Status</span>
+              <span className="text-[var(--gold)] font-medium font-mono text-[11px]">{currentStore.hours}</span>
             </div>
           </div>
 
@@ -482,7 +529,7 @@ export const StorePage: React.FC = () => {
                 {bag.length} {bag.length === 1 ? 'item' : 'items'} · {rupee(bagTotal)}
               </div>
               <div className="font-normal text-[10.5px] text-[var(--t3)] mt-2">
-                Held for 20 min · arrives by 11:40 PM
+                Ready for instant doorstep trial · Arrives in {currentStore.eta}
               </div>
               <div className="h-[42px] rounded-[21px] bg-[var(--acc)] flex items-center justify-center font-semibold text-[12.5px] text-[var(--on-acc)] mt-[14px]">
                 Open the bag

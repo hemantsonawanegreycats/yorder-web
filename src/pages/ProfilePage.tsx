@@ -42,12 +42,17 @@ export const ProfilePage: React.FC = () => {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      showToast('Please enter a valid email address');
+      return;
+    }
+
     try {
       setSavingProfile(true);
       await apiClient.post('/user/profile/update', {
-        first_name: firstName,
-        last_name: lastName,
-        email,
+        first_name: firstName.trim().slice(0, 50),
+        last_name: lastName.trim().slice(0, 50),
+        email: email.trim().slice(0, 80),
       });
       await fetchProfile();
       showToast('Profile updated successfully');
@@ -59,6 +64,9 @@ export const ProfilePage: React.FC = () => {
   };
 
   const handleDeleteAddress = (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this delivery address?')) {
+      return;
+    }
     deleteAddressMutation.mutate(id, {
       onSuccess: () => showToast('Address deleted'),
     });
@@ -326,6 +334,7 @@ export const ProfilePage: React.FC = () => {
                 <label className="block text-[11px] font-mono text-[var(--t3)] uppercase mb-1.5">First Name</label>
                 <input
                   type="text"
+                  maxLength={50}
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-[12px] bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t1)] outline-none focus:border-[var(--gold)]"
@@ -335,6 +344,7 @@ export const ProfilePage: React.FC = () => {
                 <label className="block text-[11px] font-mono text-[var(--t3)] uppercase mb-1.5">Last Name</label>
                 <input
                   type="text"
+                  maxLength={50}
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-[12px] bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t1)] outline-none focus:border-[var(--gold)]"
@@ -346,6 +356,7 @@ export const ProfilePage: React.FC = () => {
               <label className="block text-[11px] font-mono text-[var(--t3)] uppercase mb-1.5">Email Address</label>
               <input
                 type="email"
+                maxLength={80}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-11 px-3.5 rounded-[12px] bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t1)] outline-none focus:border-[var(--gold)]"

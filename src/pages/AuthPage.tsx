@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useAppStore } from '../stores/useAppStore';
@@ -15,12 +15,23 @@ export const AuthPage: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (resendCooldown > 0 && step === 'otp') return;
+
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (cleanPhone.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number');
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMsg('Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)');
       return;
     }
     setErrorMsg('');
@@ -29,9 +40,10 @@ export const AuthPage: React.FC = () => {
     setSubmitting(false);
     if (res.status) {
       setStep('otp');
+      setResendCooldown(30);
       showToast(res.message);
     } else {
-      setErrorMsg(res.message);
+      setErrorMsg(res.message || 'Failed to send OTP code');
     }
   };
 
@@ -120,10 +132,16 @@ export const AuthPage: React.FC = () => {
               <span className="font-mono text-sm text-[var(--t3)] select-none">+91</span>
               <input
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
                 maxLength={10}
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => {
+                  if (errorMsg) setErrorMsg('');
+                  setPhoneNumber(e.target.value.replace(/\D/g, ''));
+                }}
                 placeholder="Mobile number"
+                aria-label="10-digit mobile number"
                 className="w-full bg-transparent border-0 outline-none text-sm text-[var(--t1)] placeholder-[var(--t4)] font-mono tracking-wider"
                 autoFocus
               />
@@ -143,10 +161,16 @@ export const AuthPage: React.FC = () => {
             <div className="flex items-center h-[52px] px-4 rounded-[16px] bg-[var(--s1)] border border-[var(--bd)] focus-within:border-[var(--gold)] transition-colors">
               <input
                 type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 maxLength={6}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
+                onChange={(e) => {
+                  if (errorMsg) setErrorMsg('');
+                  setOtpCode(e.target.value.replace(/\D/g, ''));
+                }}
                 placeholder="6-digit OTP"
+                aria-label="6-digit OTP code"
                 className="w-full bg-transparent border-0 outline-none text-base text-[var(--t1)] placeholder-[var(--t4)] font-mono text-center tracking-[0.3em]"
                 autoFocus
               />
@@ -163,17 +187,21 @@ export const AuthPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs text-[var(--t3)] pt-1">
               <button
                 type="button"
-                onClick={() => setStep('phone')}
+                onClick={() => {
+                  setStep('phone');
+                  setErrorMsg('');
+                }}
                 className="hover:underline hover:text-[var(--t1)]"
               >
                 Change Number
               </button>
               <button
                 type="button"
+                disabled={resendCooldown > 0 || submitting}
                 onClick={handleSendOtp}
-                className="text-[var(--gold)] hover:underline font-medium"
+                className="text-[var(--gold)] hover:underline disabled:opacity-50 disabled:no-underline font-medium"
               >
-                Resend OTP
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
               </button>
             </div>
           </form>

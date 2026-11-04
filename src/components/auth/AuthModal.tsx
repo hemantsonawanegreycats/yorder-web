@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { useCartStore } from '../../stores/useCartStore';
@@ -21,6 +21,15 @@ export const AuthModal: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   if (!authModalOpen) return null;
 
@@ -30,13 +39,16 @@ export const AuthModal: React.FC = () => {
     setPhoneNumber('');
     setOtpCode('');
     setErrorMsg('');
+    setResendCooldown(0);
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (resendCooldown > 0 && step === 'otp') return;
+
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (cleanPhone.length !== 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number');
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMsg('Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)');
       return;
     }
     setErrorMsg('');
@@ -45,6 +57,7 @@ export const AuthModal: React.FC = () => {
     setSubmitting(false);
     if (res.status) {
       setStep('otp');
+      setResendCooldown(30);
       showToast(res.message);
     } else {
       setErrorMsg(res.message || 'Failed to send OTP. Please try again.');
@@ -66,7 +79,7 @@ export const AuthModal: React.FC = () => {
       showToast('Welcome to Yorder!');
       const pending = useCartStore.getState().pendingAddProduct;
       if (pending) {
-        useCartStore.getState().addToBag(pending.product, pending.size);
+        useCartStore.getState().addToBag(pending.product, pending.size, pending.variantId);
         useCartStore.getState().setPendingAddProduct(null);
       }
       handleClose();
@@ -184,6 +197,8 @@ export const AuthModal: React.FC = () => {
                   <span className="font-mono text-xs text-[var(--t3)] select-none">+91</span>
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
                     maxLength={10}
                     value={phoneNumber}
                     onChange={(e) => {
@@ -191,6 +206,7 @@ export const AuthModal: React.FC = () => {
                       setPhoneNumber(e.target.value.replace(/\D/g, ''));
                     }}
                     placeholder="9876543210"
+                    aria-label="10-digit mobile number"
                     style={{ background: 'transparent', color: 'var(--t1)' }}
                     className="w-full bg-transparent border-0 outline-none text-sm text-[var(--t1)] placeholder-[var(--t4)] font-mono"
                     autoFocus
@@ -221,6 +237,8 @@ export const AuthModal: React.FC = () => {
                 <div className="flex items-center h-[48px] px-4 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] focus-within:border-[var(--gold)] transition-colors">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
                     maxLength={6}
                     value={otpCode}
                     onChange={(e) => {
@@ -228,6 +246,7 @@ export const AuthModal: React.FC = () => {
                       setOtpCode(e.target.value.replace(/\D/g, ''));
                     }}
                     placeholder="Enter 6-digit OTP"
+                    aria-label="6-digit OTP verification code"
                     className="w-full bg-transparent border-0 outline-none text-sm text-[var(--t1)] placeholder-[var(--t4)] font-mono text-center tracking-widest"
                     autoFocus
                   />
@@ -244,17 +263,21 @@ export const AuthModal: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-[var(--t3)] pt-1">
                   <button
                     type="button"
-                    onClick={() => setStep('phone')}
+                    onClick={() => {
+                      setStep('phone');
+                      setErrorMsg('');
+                    }}
                     className="hover:underline hover:text-[var(--t1)]"
                   >
                     Change Number
                   </button>
                   <button
                     type="button"
+                    disabled={resendCooldown > 0 || submitting}
                     onClick={handleSendOtp}
-                    className="text-[var(--gold)] hover:underline"
+                    className="text-[var(--gold)] hover:underline disabled:opacity-50 disabled:no-underline font-medium"
                   >
-                    Resend Code
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                   </button>
                 </div>
               </form>

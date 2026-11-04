@@ -5,17 +5,20 @@ export interface Store {
   cat: string;
   addr: string;
   rating: string | number;
+  ratingCount?: number;
   eta: string;
   dist: string;
   count: string | number;
   hours: string;
-  browsing: string | number;
+  browsing?: string | number;
   img: string;
   repName: string;
   repIni: string;
   repLine: string;
   meta: string;
   isOnline?: boolean;
+  lat?: number;
+  lng?: number;
 }
 
 export interface Product {
@@ -35,6 +38,7 @@ export interface Product {
   note: string;
   vendorName?: string;
   rating?: number;
+  variableProducts?: any[];
 }
 
 export interface Category {

@@ -71,6 +71,8 @@ export const Header: React.FC = () => {
         <span className="text-[14px] text-[var(--t4)] select-none">⌕</span>
         <input
           className="yin w-full bg-transparent border-0 outline-none text-[12.5px] text-[var(--t1)] placeholder-[var(--t4)]"
+          maxLength={80}
+          aria-label="Search products and showrooms"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -189,6 +191,8 @@ export const Header: React.FC = () => {
             <span className="text-[14px] text-[var(--t4)]">⌕</span>
             <input
               className="yin w-full bg-transparent border-0 outline-none text-[12.5px] text-[var(--t1)]"
+              maxLength={80}
+              aria-label="Search products and showrooms"
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);

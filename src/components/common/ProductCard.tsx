@@ -41,19 +41,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
       {/* Thumbnail Card Container */}
       <div
         onClick={handleOpenProduct}
-        className="yc relative aspect-[0.92] w-full rounded-[16px] overflow-hidden bg-[var(--s1)] border border-[var(--bd)] group-hover:border-[var(--bd2)] transition-all cursor-pointer"
+        className="yc relative aspect-square max-h-[200px] w-full rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-all cursor-pointer flex items-center justify-center p-2.5"
       >
         <img
           src={imgError ? 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=70' : product.img}
           alt={product.name}
           onError={() => setImgError(true)}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
 
         {/* Off Badge */}
         {product.off && (
-          <div className="absolute left-[11px] top-[11px] px-[9px] py-[5px] rounded-[11px] bg-[var(--bg)]/90 backdrop-blur-md font-medium text-[9px] leading-none text-[var(--gold)] border border-[var(--bdw)]">
+          <div className="absolute left-[7px] top-[7px] px-[6px] py-[3px] rounded-[6px] bg-[#0B0B0C]/85 backdrop-blur-md font-medium text-[8px] leading-none text-[var(--gold)] border border-white/10 shadow-sm">
             {product.off}
           </div>
         )}
@@ -63,21 +63,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
           onClick={handleAdd}
           title="Add to bag"
           aria-label={`Add ${product.name} to bag`}
-          className="yc absolute right-[10px] bottom-[10px] w-[34px] h-[34px] rounded-full bg-[var(--bg)] shadow-md border border-[var(--bd)] flex items-center justify-center font-normal text-[18px] leading-none text-[var(--t1)] hover:bg-[var(--acc)] hover:text-[var(--on-acc)] active:scale-95 transition-all"
+          className="yc absolute right-[7px] bottom-[7px] w-[28px] h-[28px] rounded-full bg-[#0B0B0C] shadow-md border border-white/10 flex items-center justify-center font-normal text-[15px] leading-none text-white hover:bg-[var(--gold)] hover:text-black active:scale-95 transition-all"
         >
           +
         </button>
       </div>
 
       {/* Store & Rating */}
-      <div className="flex items-center gap-[6px] mt-[13px] mb-[7px]">
+      <div className="flex items-center gap-[4px] mt-[8px] mb-[3px]">
         <button
           onClick={handleGoStore}
-          className="yc text-[10px] font-normal leading-none text-[var(--t3)] hover:text-[var(--t1)] truncate max-w-[150px]"
+          className="yc text-[9.5px] font-normal leading-none text-[var(--t3)] hover:text-[var(--t1)] truncate max-w-[120px]"
         >
           {storeName}
         </button>
-        <span className="text-[10px] font-medium leading-none text-[var(--gold)]">
+        <span className="text-[9px] font-medium leading-none text-[var(--gold)]">
           ★ {storeRating}
         </span>
       </div>
@@ -85,25 +85,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
       {/* Product Title */}
       <button
         onClick={handleOpenProduct}
-        className="yc text-[12.5px] font-medium leading-[1.4] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
+        className="yc text-[11.5px] font-medium leading-[1.3] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
       >
         {product.name}
       </button>
 
       {/* Prices */}
-      <div className="flex items-baseline gap-2 mt-[9px]">
-        <span className="font-semibold text-[14px] leading-none text-[var(--t1)]">
+      <div className="flex items-baseline gap-1.5 mt-[4px]">
+        <span className="font-semibold text-[13px] leading-none text-[var(--t1)]">
           {rupee(product.price)}
         </span>
         {product.mrp > product.price && (
-          <span className="font-normal text-[11px] leading-none text-[var(--t4)] line-through">
+          <span className="font-normal text-[10px] leading-none text-[var(--t4)] line-through">
             {rupee(product.mrp)}
           </span>
         )}
       </div>
 
       {/* ETA Subtitle */}
-      <div className="text-[10px] font-normal leading-none text-[var(--t3)] mt-[8px]">
+      <div className="text-[9px] font-normal leading-none text-[var(--t3)] mt-[4px]">
         {etaText}
       </div>
     </div>

@@ -4,21 +4,13 @@ import { useVendorsQuery } from '../api/vendors.api';
 import { StoreCardSkeleton, ErrorState } from '../components/common/Skeleton';
 import { SEO } from '../components/common/SEO';
 import { Store } from '../types';
+import { MumbaiShowroomMap } from '../components/showroom/MumbaiShowroomMap';
 
 export const ShowroomsPage: React.FC = () => {
   const { go, setSid, idx, setIdx } = useAppStore();
   const { data: stores, isLoading, isError, refetch } = useVendorsQuery();
 
   const storeList: Store[] = useMemo(() => Object.values(stores || {}), [stores]);
-
-  const pins = useMemo(() => {
-    return storeList.slice(0, 5).map((s, i) => ({
-      label: s.name.split(' ')[0],
-      sid: s.id,
-      left: `${[22, 46, 63, 34, 74][i % 5]}%`,
-      top: `${[34, 22, 52, 66, 30][i % 5]}%`,
-    }));
-  }, [storeList]);
 
   const chapters = useMemo(() => {
     if (storeList.length === 0) return [];
@@ -38,7 +30,7 @@ export const ShowroomsPage: React.FC = () => {
         cat: catName,
         stat: `${vList.length} SHOWROOMS · LIVE STOCK`,
         eta: vList[0]?.eta || '45 min',
-        img: vList[0]?.img || '/assets/map-cluster.jpg',
+        img: vList[0]?.img || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=75',
         note: `Verified on the shop floor at ${vList[0]?.name || 'local showroom'}. Stock counted by hand.`,
         sids: vList.map((s) => s.id),
       };
@@ -52,7 +44,7 @@ export const ShowroomsPage: React.FC = () => {
     cat: 'Showrooms',
     stat: `${storeList.length} STORES LIVE`,
     eta: '45 min',
-    img: '/assets/map-cluster.jpg',
+    img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=75',
     note: 'Real local showrooms counted by hand.',
     sids: storeList.map((s) => s.id),
   };
@@ -68,7 +60,7 @@ export const ShowroomsPage: React.FC = () => {
         title="Showrooms & Shelves Near You in Bandra, Mumbai | Yorder"
         description="Local fashion, tech, watch, and beauty showrooms within Bandra. Real stores, real stock, counted by hand."
         canonical="https://yorder.com/showrooms"
-        ogImage="/assets/map-cluster.jpg"
+        ogImage="/assets/logo-dark.png"
       />
 
       {/* Top Split Hero Section */}
@@ -96,36 +88,9 @@ export const ShowroomsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Interactive Cluster Map */}
-        <div className="relative bg-[var(--s0)] min-h-[340px] md:min-h-[380px] overflow-hidden select-none">
-          <img
-            src="/assets/map-cluster.jpg"
-            alt="Showroom Map Cluster"
-            className="absolute inset-0 w-full h-full object-cover object-center opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/80 via-[#0B0B0C]/35 to-transparent pointer-events-none" />
-
-          {/* Interactive Map Pins */}
-          {pins.map((pin) => (
-            <button
-              key={pin.sid}
-              onClick={() => handleOpenStore(pin.sid)}
-              style={{ left: pin.left, top: pin.top }}
-              className="yc absolute -translate-x-1/2 -translate-y-1/2 px-[11px] py-[6px] rounded-[14px] bg-[var(--glass)] border border-[var(--bdw)] font-medium text-[10px] leading-none text-[var(--tw)] whitespace-nowrap shadow-md hover:scale-105 transition-transform"
-            >
-              {pin.label}
-            </button>
-          ))}
-
-          {/* Cluster Floating Card */}
-          <div className="absolute left-6 bottom-6 p-[12px_16px] rounded-[14px] bg-[var(--glass)] backdrop-blur-[10px] border border-[var(--bd)] shadow-lg">
-            <div className="font-medium text-[9px] leading-none tracking-[0.16em] text-[var(--gold)]">
-              LINKING ROAD CLUSTER
-            </div>
-            <div className="font-normal text-[11px] leading-[1.5] text-[var(--t2)] mt-2">
-              {storeList.length} showrooms · median 45 min to your door
-            </div>
-          </div>
+        {/* Right Interactive Mumbai Showroom Map */}
+        <div className="relative min-h-[360px] md:min-h-[400px] overflow-hidden">
+          <MumbaiShowroomMap stores={storeList} onSelectStore={handleOpenStore} />
         </div>
       </div>
 

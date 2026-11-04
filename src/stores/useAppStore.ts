@@ -10,7 +10,6 @@ interface AppState {
   cat: string;
   brand: string | null;
   sort: number;
-  win: Record<number, boolean>;
   pid: string | number;
   sid: string | number;
   shelfTab: number;
@@ -35,7 +34,6 @@ interface AppState {
   setBrand: (brand: string | null) => void;
   setSort: (sort: number) => void;
   cycleSort: () => void;
-  toggleWin: (idx: number) => void;
   clearFilters: () => void;
   setPid: (pid: string | number) => void;
   setSid: (sid: string | number) => void;
@@ -85,7 +83,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   cat: 'All',
   brand: null,
   sort: 0,
-  win: { 0: true, 1: true, 2: false },
   pid: '',
   sid: '',
   shelfTab: 0,
@@ -128,10 +125,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   setBrand: (brand) => set((s) => ({ brand: s.brand === brand ? null : brand })),
   setSort: (sort) => set({ sort }),
   cycleSort: () => set((s) => ({ sort: (s.sort + 1) % 3 })),
-  toggleWin: (idx) =>
-    set((s) => ({
-      win: { ...s.win, [idx]: !s.win[idx] },
-    })),
 
   clearFilters: () => set({ cat: 'All', brand: null, q: '', sort: 0 }),
   setPid: (pid) => set({ pid }),

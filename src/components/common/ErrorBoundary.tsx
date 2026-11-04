@@ -48,7 +48,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-xs text-[var(--t3)] leading-relaxed">
               We encountered a glitch displaying this showroom section. Your session and bag are safe.
             </p>
-            {this.state.error?.message && (
+            {import.meta.env.DEV && this.state.error?.message && (
               <div className="p-3 rounded-[12px] bg-[var(--s0)] border border-[var(--bd)] text-[11px] font-mono text-[var(--t4)] max-w-full overflow-hidden text-ellipsis">
                 {this.state.error.message}
               </div>

@@ -19,8 +19,6 @@ export const ProductsPage: React.FC = () => {
     setBrand,
     sort,
     cycleSort,
-    win,
-    toggleWin,
     clearFilters,
   } = useAppStore();
 
@@ -108,12 +106,6 @@ export const ProductsPage: React.FC = () => {
 
   // Extract unique brand names
   const brandNames = Array.from(new Set(products.map((p) => p.brand))).filter(Boolean);
-
-  const deliveryWindows = [
-    'Within 2 hours',
-    'Today, 6–8 PM',
-    'Collect from the store',
-  ];
 
   const productsTitle = q ? `“${q}”` : cat === 'All' ? 'Products' : cat;
 
@@ -217,40 +209,6 @@ export const ProductsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Delivery Window */}
-          <div>
-            <div className="font-medium text-[9px] leading-none tracking-[0.16em] text-[var(--t3)] mb-[14px]">
-              DELIVERY WINDOW
-            </div>
-            <div className="flex flex-col gap-[11px]">
-              {deliveryWindows.map((label, idx) => {
-                const checked = !!win[idx];
-                return (
-                  <button
-                    key={label}
-                    onClick={() => toggleWin(idx)}
-                    className="yc flex items-center gap-[11px] text-left"
-                  >
-                    <div
-                      className="w-[15px] h-[15px] rounded-[5px] flex items-center justify-center transition-colors flex-shrink-0"
-                      style={{
-                        background: checked ? 'var(--gold)' : 'transparent',
-                        border: checked ? '1px solid var(--gold)' : '1px solid var(--bd2)',
-                      }}
-                    >
-                      {checked && (
-                        <span className="text-[10px] text-[#0B0B0C] font-bold leading-none">✓</span>
-                      )}
-                    </div>
-                    <span className="font-normal text-[12px] leading-none text-[var(--t2)]">
-                      {label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Brand Chips */}
           <div>
             <div className="font-medium text-[9px] leading-none tracking-[0.16em] text-[var(--t3)] mb-[14px]">
@@ -309,14 +267,14 @@ export const ProductsPage: React.FC = () => {
               />
             </div>
           ) : isLoading ? (
-            <div className="px-4 md:px-[34px] pb-[40px] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-              {[...Array(8)].map((_, i) => (
+            <div className="px-4 md:px-[34px] pb-[40px] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-3.5">
+              {[...Array(12)].map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : filtered.length > 0 ? (
             <div className="px-4 md:px-[34px] pb-[40px] flex flex-col">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-3.5">
                 {filtered.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -327,7 +285,7 @@ export const ProductsPage: React.FC = () => {
 
                 {/* Skeletons while loading next page on scroll */}
                 {isFetchingNextPage &&
-                  [...Array(4)].map((_, i) => <ProductCardSkeleton key={`next-${i}`} />)}
+                  [...Array(6)].map((_, i) => <ProductCardSkeleton key={`next-${i}`} />)}
               </div>
 
               {/* Sentinel trigger for infinite scroll */}

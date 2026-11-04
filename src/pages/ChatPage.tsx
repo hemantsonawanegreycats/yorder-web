@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../stores/useAppStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useVendorsQuery } from '../api/vendors.api';
@@ -38,11 +39,26 @@ export const ChatPage: React.FC = () => {
     !!activeId
   );
 
+  const [searchParams] = useSearchParams();
+  const requestedVendorId = searchParams.get('vendorId');
+
   useEffect(() => {
-    if (activeInquiry && selectedInquiryId === null) {
+    if (!requestedVendorId || !realInquiries) return;
+    const existing = realInquiries.find(
+      (inq: any) => String(inq.vendor_id ?? inq.vendor?.id) === String(requestedVendorId)
+    );
+    if (existing) {
+      setSelectedInquiryId(existing.id);
+    } else if (isAuthenticated && !createInquiryMutation.isPending && Number(requestedVendorId)) {
+      handleStartInquiry(Number(requestedVendorId));
+    }
+  }, [requestedVendorId, realInquiries, isAuthenticated]);
+
+  useEffect(() => {
+    if (activeInquiry && selectedInquiryId === null && !requestedVendorId) {
       setSelectedInquiryId(activeInquiry.id);
     }
-  }, [activeInquiry, selectedInquiryId]);
+  }, [activeInquiry, selectedInquiryId, requestedVendorId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -254,9 +270,11 @@ export const ChatPage: React.FC = () => {
             <form onSubmit={handleSendMessage} className="p-3.5 border-t border-[var(--s2)] bg-[var(--s0)] flex items-center gap-2">
               <input
                 type="text"
+                maxLength={1000}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={`Message ${activeInquiry.vendor?.name || 'store rep'}...`}
+                aria-label="Chat message"
                 className="flex-1 h-11 px-4 rounded-full bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t1)] outline-none focus:border-[var(--gold)] placeholder-[var(--t4)]"
               />
               <button
