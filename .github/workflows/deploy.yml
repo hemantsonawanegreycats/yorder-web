@@ -1,0 +1,50 @@
+name: Deploy to Hostinger VPS (CI/CD)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: 1. CI - Verify Build & Types
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Verify TypeScript & Vite Build
+        run: npm run build
+
+  deploy-to-vps:
+    name: 2. CD - Deploy to Hostinger VPS
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Hostinger via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || 22 }}
+          script: |
+            set -e
+            echo "🚀 Starting automated deployment on Hostinger VPS..."
+            cd /var/www/yorder-web
+            git reset --hard
+            git pull origin main
+            npm install
+            npm run build
+            sudo chown -R www-data:www-data /var/www/yorder-web/dist
+            sudo chmod -R 755 /var/www/yorder-web/dist
+            echo "✅ Deployment successful! Nginx is serving the latest storefront."
