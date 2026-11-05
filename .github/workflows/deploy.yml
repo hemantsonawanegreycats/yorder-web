@@ -24,6 +24,12 @@ jobs:
         run: npm ci
 
       - name: 4. Build Production Bundle
+        env:
+          VITE_API_URL: https://api.ywsglobal.com/api
+          VITE_SOCKET_URL: https://api.ywsglobal.com
+          VITE_AUTH_TOKEN_KEY: yorder_web_auth_token
+          VITE_BRAND_NAME: Yorder
+          VITE_BRAND_TAGLINE: Real stores, real stock, counted by hand
         run: npm run build
 
       - name: 5. Sync dist/ to Hostinger via FTP

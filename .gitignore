@@ -1,7 +1,9 @@
 # Environment & Local Secrets (NEVER COMMIT)
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+!.env.production
 
 # Logs
 logs
