@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { BagItem, Product } from '../types';
 import { useAppStore } from './useAppStore';
 import { useAuthStore } from './useAuthStore';
-import { fetchCart, BackendCart } from '../api/cart.api';
+import { fetchCart, ensureCart, BackendCart } from '../api/cart.api';
 import { mapBackendToProduct } from '../api/products.api';
 import { apiClient } from '../api/client';
 
@@ -142,51 +142,82 @@ export const useCartStore = create<CartState>()(
         const selectedSize = size || (product.sizes?.length ? product.sizes[0] : 'Standard');
         const state = get();
 
-        // Check if item already exists in bag
-        const existingIdx = state.bag.findIndex((b) => String(b.pid) === String(product.id) && b.size === selectedSize);
+        // 1. Determine variantId
+        let variantId = explicitVariantId;
+        if (!variantId && product.variableProducts?.length) {
+          const matching = product.variableProducts.find(
+            (v: any) =>
+              (explicitVariantId && v.id === explicitVariantId) ||
+              (v.size && String(v.size).toLowerCase() === selectedSize.toLowerCase()) ||
+              (v.title && String(v.title).toLowerCase() === selectedSize.toLowerCase()) ||
+              (v.attributes?.size && String(v.attributes.size).toLowerCase() === selectedSize.toLowerCase()) ||
+              (v.attributes?.title && String(v.attributes.title).toLowerCase() === selectedSize.toLowerCase()) ||
+              (Array.isArray(v.attributes) &&
+                v.attributes.some(
+                  (a: any) =>
+                    (a?.value && String(a.value).toLowerCase() === selectedSize.toLowerCase()) ||
+                    (a?.title && String(a.title).toLowerCase() === selectedSize.toLowerCase())
+                ))
+          );
+          variantId = matching?.id || product.variableProducts[0]?.id;
+        }
+
+        // 2. Check if item already exists in bag
+        const existingIdx = state.bag.findIndex(
+          (b) =>
+            String(b.pid) === String(product.id) &&
+            (variantId ? b.variantId === variantId : b.size === selectedSize)
+        );
+
         if (existingIdx >= 0) {
           await get().updateQuantity(existingIdx, 1);
           useAppStore.getState().showToast(`Added another ${product.name} to bag`);
           return;
         }
 
+        // 3. Optimistically add item to bag immediately (0ms)
+        const newItem: BagItem = {
+          pid: String(product.id),
+          size: selectedSize,
+          quantity: 1,
+          variantId,
+          product,
+        };
+
         set((s) => ({
-          bag: [...s.bag, { pid: product.id, size: selectedSize, quantity: 1, product }],
+          bag: [...s.bag, newItem],
         }));
         useAppStore.getState().showToast(`${product.name} added to the bag`);
 
-        // If backend cart exists or can be obtained, sync in background
+        // 4. Ensure backend cart exists and sync to database
         try {
-          let cId = state.cartId;
-          if (!cId) {
-            const backend = await fetchCart();
-            if (backend?.id) {
-              cId = backend.id;
-              set({ cartId: backend.id, minOrderValue: backend.minOrderValue || 0 });
-            }
-          }
-          if (cId) {
-            let variantId = explicitVariantId;
-            if (!variantId && product.variableProducts?.length) {
-              const matching = product.variableProducts.find(
-                (v: any) =>
-                  v.id === explicitVariantId ||
-                  v.size === selectedSize ||
-                  v.title === selectedSize ||
-                  v.attributes?.size === selectedSize ||
-                  v.attributes?.title === selectedSize
-              );
-              variantId = matching?.id;
-            }
+          const cart = await ensureCart();
+          if (cart?.id) {
+            set({ cartId: cart.id, minOrderValue: cart.minOrderValue || 0 });
 
-            await apiClient.post(`/user/cart/${cId}/item`, {
+            const requestBody: any = {
               product_id: Number(product.id),
               quantity: 1,
-              ...(variantId ? { variant_id: Number(variantId) } : {}),
-            });
-            await get().syncBackendCart();
+            };
+            if (variantId) {
+              requestBody.variant_id = Number(variantId);
+            }
+
+            const postResp = await apiClient.post(`/user/cart/${cart.id}/item`, requestBody);
+            const createdItemId = postResp.data?.data?.id || postResp.data?.id;
+
+            if (createdItemId) {
+              set((s) => ({
+                bag: s.bag.map((b) =>
+                  String(b.pid) === String(product.id) &&
+                  (variantId ? b.variantId === variantId : b.size === selectedSize)
+                    ? { ...b, cartItemId: createdItemId, variantId }
+                    : b
+                ),
+              }));
+            }
           }
-        } catch (e) {
+        } catch (e: any) {
           console.warn('Backend item sync notice:', e);
         }
       },
@@ -202,14 +233,15 @@ export const useCartStore = create<CartState>()(
             });
 
             // If backend has items, map them directly as the source of truth
-            if (Array.isArray(backendCart.items)) {
+            if (Array.isArray(backendCart.items) && backendCart.items.length > 0) {
               const mappedFromBackend: BagItem[] = backendCart.items.map((it) => {
                 const product = mapBackendToProduct(it.product as any);
                 return {
-                  pid: String(it.product.id),
+                  pid: String(it.product?.id || it.id),
                   size:
                     it.variant?.attributes?.title ||
                     it.variant?.attributes?.size ||
+                    it.variant?.name ||
                     'Standard',
                   quantity: it.quantity || 1,
                   cartItemId: it.id,
@@ -220,6 +252,28 @@ export const useCartStore = create<CartState>()(
 
               set({ bag: mappedFromBackend, isSyncing: false });
               return backendCart;
+            } else if (Array.isArray(backendCart.items) && backendCart.items.length === 0) {
+              // If backend cart is empty, keep local items and attempt to sync them to the backend cart
+              const currentBag = get().bag;
+              if (currentBag.length > 0) {
+                for (const item of currentBag) {
+                  try {
+                    const postResp = await apiClient.post(`/user/cart/${backendCart.id}/item`, {
+                      product_id: Number(item.pid),
+                      quantity: item.quantity || 1,
+                      ...(item.variantId ? { variant_id: Number(item.variantId) } : {}),
+                    });
+                    const realId = postResp.data?.data?.id || postResp.data?.id;
+                    if (realId) {
+                      item.cartItemId = realId;
+                    }
+                  } catch (pushErr) {
+                    console.warn('Failed to sync local item to backend cart:', pushErr);
+                  }
+                }
+              } else {
+                set({ bag: [], isSyncing: false });
+              }
             }
           }
         } catch (e) {

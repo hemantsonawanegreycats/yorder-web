@@ -59,6 +59,30 @@ export const fetchCart = async (): Promise<BackendCart | null> => {
   return null;
 };
 
+export const createDefaultCart = async (): Promise<BackendCart | null> => {
+  try {
+    const resp = await apiClient.post('/user/cart', { name: 'default' });
+    const data = resp.data?.data || resp.data;
+    if (data?.id) {
+      return {
+        id: data.id,
+        name: data.name || 'default',
+        items: Array.isArray(data.items) ? data.items : [],
+        minOrderValue: resp.data?.minOrderValue || data.minOrderValue || 0,
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to create default cart:', err);
+  }
+  return null;
+};
+
+export const ensureCart = async (): Promise<BackendCart | null> => {
+  const existing = await fetchCart();
+  if (existing?.id) return existing;
+  return await createDefaultCart();
+};
+
 export const useCartQuery = () => {
   return useQuery({
     queryKey: ['cart'],
