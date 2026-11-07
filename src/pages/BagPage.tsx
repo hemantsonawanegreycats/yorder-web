@@ -96,13 +96,21 @@ export const BagPage: React.FC = () => {
 
   const resolvedBagItems = bag.map((b, i) => {
     const product = b.product || (allProducts || []).find((p) => String(p.id) === String(b.pid));
+    const variant =
+      b.variantId && product?.variableProducts?.length
+        ? product.variableProducts.find((v: any) => v.id === b.variantId)
+        : null;
+    const effectivePrice = Number(variant?.sellPrice ?? variant?.price ?? product?.price ?? 0);
+    const effectiveMrp = Number(variant?.price ?? variant?.sellPrice ?? product?.mrp ?? effectivePrice);
+
     return {
       bagIndex: i,
       pid: b.pid,
       size: b.size,
       quantity: b.quantity || 1,
       cartItemId: b.cartItemId,
-      product: product || null,
+      variantId: b.variantId,
+      product: product ? { ...product, price: effectivePrice, mrp: effectiveMrp } : null,
       isResolving: !product,
     };
   });
