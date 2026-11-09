@@ -15,12 +15,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
   const [imgError, setImgError] = useState(false);
 
   const isOutOfStock = (() => {
-    if (!product.isVendorManageInventory) return false;
+    if (product.tagOk === false) return true;
     if (Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
-      return product.variableProducts.every((v) => {
-        const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
-        return q <= 0;
+      let anyQty = false;
+      const allOut = product.variableProducts.every((v) => {
+        const q = v?.availableQty ?? v?.availableQuantity;
+        if (q !== undefined && q !== null) {
+          anyQty = true;
+          return Number(q) <= 0;
+        }
+        return false;
       });
+      if (anyQty && allOut) return true;
+    }
+    if (product.availableQuantity !== undefined && product.availableQuantity !== null) {
+      return Number(product.availableQuantity) <= 0;
     }
     return !product.tagOk;
   })();
@@ -73,7 +82,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
 
         {/* Out of Stock or Off Badge */}
         {isOutOfStock ? (
-          <div className="absolute left-[7px] top-[7px] px-[6px] py-[3px] rounded-[6px] bg-[#EF4444]/90 backdrop-blur-md font-semibold text-[7.5px] tracking-wider leading-none text-white border border-[#EF4444]/30 shadow-sm uppercase">
+          <div className="absolute left-[7px] top-[7px] px-[7px] py-[3.5px] rounded-[6px] bg-[#EF4444] font-bold text-[8px] tracking-wider leading-none text-white shadow-md uppercase">
             Sold Out
           </div>
         ) : product.off ? (
@@ -84,16 +93,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
 
         {/* Quick Add Button or Out of Stock indicator */}
         {isOutOfStock ? (
-          <div
-            title="Currently out of stock"
-            className="absolute right-[7px] bottom-[7px] px-[7px] py-[3px] rounded-[6px] bg-black/75 backdrop-blur-sm text-[7.5px] font-medium uppercase tracking-wider text-neutral-400 border border-white/10"
+          <button
+            disabled={true}
+            onClick={(e) => e.stopPropagation()}
+            title="Out of stock"
+            aria-label="Out of stock"
+            className="absolute right-[7px] bottom-[7px] px-[8px] py-[4px] rounded-full bg-black/85 backdrop-blur-sm text-[8px] font-semibold uppercase tracking-wider text-[#EF4444] border border-[#EF4444]/40 cursor-not-allowed shadow-sm select-none"
           >
             Out of stock
-          </div>
+          </button>
         ) : (
           <button
             onClick={handleAdd}
-            title="Add to bag"
+            title={hasMultipleVariants ? 'Select options' : 'Add to bag'}
             aria-label={`Add ${product.name} to bag`}
             className="yc absolute right-[7px] bottom-[7px] w-[28px] h-[28px] rounded-full bg-[#0B0B0C] shadow-md border border-white/10 flex items-center justify-center font-normal text-[15px] leading-none text-white hover:bg-[var(--gold)] hover:text-black active:scale-95 transition-all"
           >

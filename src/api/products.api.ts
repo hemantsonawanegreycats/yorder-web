@@ -117,24 +117,44 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
 
   if (variableProducts.length > 0) {
     let allVariantsOut = true;
+    let anyQtySpecified = false;
+
     for (const v of variableProducts) {
-      const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
-      totalStockCount += Math.max(0, q);
-      if (q > 0) {
-        allVariantsOut = false;
+      const q = v?.availableQty ?? v?.availableQuantity;
+      if (q !== undefined && q !== null) {
+        anyQtySpecified = true;
+        const numQ = Number(q);
+        totalStockCount += Math.max(0, numQ);
+        if (numQ > 0) {
+          allVariantsOut = false;
+        }
       }
     }
-    // Only consider out of stock if vendor explicitly manages inventory
-    isOutOfStock = isVendorManageInventory ? allVariantsOut : false;
+
+    if (anyQtySpecified) {
+      isOutOfStock = allVariantsOut;
+    } else {
+      const baseQty = bp.availableQuantity ?? bp.availableQty;
+      if (baseQty !== undefined && baseQty !== null) {
+        isOutOfStock = Number(baseQty) <= 0;
+        totalStockCount = Math.max(0, Number(baseQty));
+      } else {
+        isOutOfStock = false;
+      }
+    }
   } else {
-    const baseQty = Number(bp.availableQuantity ?? bp.availableQty ?? (isVendorManageInventory ? 0 : 1));
-    isOutOfStock = isVendorManageInventory ? baseQty <= 0 : false;
-    totalStockCount = baseQty;
+    const baseQty = bp.availableQuantity ?? bp.availableQty;
+    if (baseQty !== undefined && baseQty !== null) {
+      isOutOfStock = Number(baseQty) <= 0;
+      totalStockCount = Math.max(0, Number(baseQty));
+    } else {
+      isOutOfStock = false;
+    }
   }
 
   const stockText = isOutOfStock
     ? 'Out of stock'
-    : isVendorManageInventory && totalStockCount > 0
+    : totalStockCount > 0
     ? `${totalStockCount} in stock`
     : 'In stock';
 

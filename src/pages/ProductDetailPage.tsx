@@ -104,15 +104,19 @@ export const ProductDetailPage: React.FC = () => {
   const activeMrp = Number(activeVariant?.price ?? activeVariant?.sellPrice ?? product.mrp);
 
   const isVariantOutOfStock = (v: any): boolean => {
-    if (!product.isVendorManageInventory) return false;
     if (!v) return !product.tagOk;
-    const qty = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
-    return qty <= 0;
+    const qty = v?.availableQty ?? v?.availableQuantity;
+    if (qty !== undefined && qty !== null) {
+      return Number(qty) <= 0;
+    }
+    return !product.tagOk;
   };
 
   const isCurrentOutOfStock = activeVariant
     ? isVariantOutOfStock(activeVariant)
-    : (product.isVendorManageInventory ? !product.tagOk : false);
+    : (product.availableQuantity !== undefined && product.availableQuantity !== null
+      ? Number(product.availableQuantity) <= 0
+      : !product.tagOk);
 
   const isStoreOpenNow = store ? store.isOpen !== false : true;
 
