@@ -4,6 +4,7 @@ import { useAppStore } from '../../stores/useAppStore';
 import { useCartStore } from '../../stores/useCartStore';
 import { useVendorsQuery } from '../../api/vendors.api';
 import { rupee } from '../../utils/formatters';
+import { isProductOutOfStock } from '../../utils/productUtils';
 
 interface ProductCardProps {
   product: Product;
@@ -18,26 +19,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
 
   const currentStore = store || (stores && product.sid ? stores[product.sid] : undefined);
   const isStoreClosed = currentStore ? currentStore.isOpen === false : false;
-
-  const isOutOfStock = (() => {
-    if (product.tagOk === false) return true;
-    if (Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
-      let anyQty = false;
-      const allOut = product.variableProducts.every((v) => {
-        const q = v?.availableQty ?? v?.availableQuantity;
-        if (q !== undefined && q !== null) {
-          anyQty = true;
-          return Number(q) <= 0;
-        }
-        return false;
-      });
-      if (anyQty && allOut) return true;
-    }
-    if (product.availableQuantity !== undefined && product.availableQuantity !== null) {
-      return Number(product.availableQuantity) <= 0;
-    }
-    return !product.tagOk;
-  })();
+  const isOutOfStock = isProductOutOfStock(product);
 
   const hasMultipleVariants = Array.isArray(product.variableProducts) && product.variableProducts.length > 1;
 

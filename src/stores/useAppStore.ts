@@ -10,6 +10,10 @@ interface AppState {
   cat: string;
   brand: string | null;
   sort: number;
+  inStockOnly: boolean;
+  openStoresOnly: boolean;
+  selectedVendorId: string | null;
+  minDiscount: number | null;
   pid: string | number;
   sid: string | number;
   orderId?: string | number;
@@ -35,6 +39,10 @@ interface AppState {
   setBrand: (brand: string | null) => void;
   setSort: (sort: number) => void;
   cycleSort: () => void;
+  setInStockOnly: (val: boolean | ((prev: boolean) => boolean)) => void;
+  setOpenStoresOnly: (val: boolean | ((prev: boolean) => boolean)) => void;
+  setSelectedVendorId: (id: string | null) => void;
+  setMinDiscount: (disc: number | null) => void;
   clearFilters: () => void;
   setPid: (pid: string | number) => void;
   setSid: (sid: string | number) => void;
@@ -84,6 +92,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   cat: 'All',
   brand: null,
   sort: 0,
+  inStockOnly: false,
+  openStoresOnly: false,
+  selectedVendorId: null,
+  minDiscount: null,
   pid: '',
   sid: '',
   shelfTab: 0,
@@ -125,9 +137,27 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCat: (cat) => set({ cat }),
   setBrand: (brand) => set((s) => ({ brand: s.brand === brand ? null : brand })),
   setSort: (sort) => set({ sort }),
-  cycleSort: () => set((s) => ({ sort: (s.sort + 1) % 3 })),
+  cycleSort: () => set((s) => ({ sort: (s.sort + 1) % 5 })),
+  setInStockOnly: (val) =>
+    set((s) => ({ inStockOnly: typeof val === 'function' ? val(s.inStockOnly) : val })),
+  setOpenStoresOnly: (val) =>
+    set((s) => ({ openStoresOnly: typeof val === 'function' ? val(s.openStoresOnly) : val })),
+  setSelectedVendorId: (id) =>
+    set((s) => ({ selectedVendorId: s.selectedVendorId === id ? null : id })),
+  setMinDiscount: (disc) =>
+    set((s) => ({ minDiscount: s.minDiscount === disc ? null : disc })),
 
-  clearFilters: () => set({ cat: 'All', brand: null, q: '', sort: 0 }),
+  clearFilters: () =>
+    set({
+      cat: 'All',
+      brand: null,
+      q: '',
+      sort: 0,
+      inStockOnly: false,
+      openStoresOnly: false,
+      selectedVendorId: null,
+      minDiscount: null,
+    }),
   setPid: (pid) => set({ pid }),
   setSid: (sid) => set({ sid }),
   setShelfTab: (shelfTab) => set({ shelfTab }),

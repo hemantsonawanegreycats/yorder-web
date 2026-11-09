@@ -159,3 +159,12 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--t1) !important;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
