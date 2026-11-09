@@ -30,6 +30,21 @@ export const ProductDetailPage: React.FC = () => {
     fetchedProduct ||
     (allProducts || []).find((p) => String(p.id) === String(effectivePid));
 
+  // Auto-select the first in-stock variant when product loads (MUST be before any early returns to respect React Rules of Hooks)
+  React.useEffect(() => {
+    if (product && Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
+      if (product.isVendorManageInventory) {
+        const firstInStock = product.variableProducts.findIndex((v: any) => {
+          const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
+          return q > 0;
+        });
+        if (firstInStock >= 0) {
+          setSelectedSizeIdx(firstInStock);
+        }
+      }
+    }
+  }, [product?.id]);
+
   const handleBack = () => {
     if (window.history.state && window.history.state.idx > 0) {
       navigate(-1);
@@ -83,21 +98,6 @@ export const ProductDetailPage: React.FC = () => {
     setSid(product.sid);
     go('store', { sid: product.sid });
   };
-
-  // Auto-select the first in-stock variant when product loads
-  React.useEffect(() => {
-    if (product && Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
-      if (product.isVendorManageInventory) {
-        const firstInStock = product.variableProducts.findIndex((v: any) => {
-          const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
-          return q > 0;
-        });
-        if (firstInStock >= 0) {
-          setSelectedSizeIdx(firstInStock);
-        }
-      }
-    }
-  }, [product?.id]);
 
   const activeVariant = product.variableProducts?.[selectedSizeIdx];
   const activePrice = Number(activeVariant?.sellPrice ?? activeVariant?.price ?? product.price);

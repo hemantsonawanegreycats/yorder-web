@@ -106,7 +106,10 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
     return seenCounts[sz] > 1 ? `${sz} (${seenCounts[sz]})` : sz;
   });
 
-  const isVendorManageInventory = vendor?.is_vendor_manage_inventory === true;
+  const isVendorManageInventory =
+    vendor?.is_vendor_manage_inventory === true ||
+    vendor?.is_vendor_manage_inventory === 1 ||
+    vendor?.is_vendor_manage_inventory === '1';
   const variableProducts = Array.isArray(bp.variableProducts) ? bp.variableProducts : [];
 
   let isOutOfStock = false;

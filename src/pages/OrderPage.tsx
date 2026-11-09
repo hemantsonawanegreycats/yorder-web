@@ -56,8 +56,7 @@ export const OrderPage: React.FC = () => {
   const isDelivered = statusName.toLowerCase() === 'delivered' || !!order?.orderCompleted;
   const isLive = !isCancelled && !isDelivered;
 
-  const progressPercents = [18, 48, 78, 100];
-  const progressWidth = `${progressPercents[activeStepIdx]}%`;
+  const progressPercent = (activeStepIdx / (STEPS.length - 1)) * 100;
 
   const rider = order?.delivery_by?.user;
   const riderName = rider ? `${rider.first_name || ''} ${rider.last_name || ''}`.trim() : null;
@@ -192,13 +191,14 @@ export const OrderPage: React.FC = () => {
 
           {/* Stepper Bar */}
           <div className="relative mt-8 mb-4">
-            {/* Background Track */}
-            <div className="absolute top-1/2 left-0 right-0 h-[2px] -translate-y-1/2 bg-[var(--s2)]" />
-            {/* Active Track */}
-            <div
-              className="absolute top-1/2 left-0 h-[2px] -translate-y-1/2 bg-[var(--gold)] transition-all duration-700"
-              style={{ width: progressWidth }}
-            />
+            {/* Background Track running strictly between center of circle 1 and center of circle 4 */}
+            <div className="absolute top-4 left-4 right-4 h-[2.5px] -translate-y-1/2 bg-[var(--s2)] rounded-full overflow-hidden">
+              {/* Active Progress Fill */}
+              <div
+                className="h-full bg-[var(--gold)] transition-all duration-700 rounded-full shadow-[0_0_8px_rgba(200,160,106,0.5)]"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
 
             {/* Step Dots */}
             <div className="relative flex justify-between">
@@ -208,12 +208,12 @@ export const OrderPage: React.FC = () => {
                 return (
                   <div key={s.key} className="flex flex-col items-center">
                     <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] transition-all z-10 ${
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] transition-all z-10 ${
                         isCurrent
-                          ? 'bg-[var(--gold)] text-black ring-4 ring-[var(--gold)]/20 shadow-md scale-110'
+                          ? 'bg-[var(--gold)] text-black ring-4 ring-[var(--gold)]/20 shadow-md scale-105'
                           : isPassed
                           ? 'bg-[var(--gold)] text-black'
-                          : 'bg-[var(--s2)] text-[var(--t3)] border border-[var(--bd)]'
+                          : 'bg-[var(--s0)] text-[var(--t3)] border-2 border-[var(--s2)]'
                       }`}
                     >
                       {isPassed ? '✓' : idx + 1}

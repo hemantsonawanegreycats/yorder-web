@@ -5,8 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const rupee = (n: number | string): string => {
-  const num = typeof n === 'string' ? parseFloat(n) || 0 : n;
+export const rupee = (n: number | string | null | undefined): string => {
+  if (n === null || n === undefined) return '₹0';
+  const num = typeof n === 'string' ? parseFloat(n) || 0 : (typeof n === 'number' && !isNaN(n) ? n : 0);
   return '₹' + num.toLocaleString('en-IN');
 };
 
