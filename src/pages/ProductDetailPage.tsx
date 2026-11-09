@@ -84,39 +84,47 @@ export const ProductDetailPage: React.FC = () => {
     go('store', { sid: product.sid });
   };
 
-  const handleAddCurrent = () => {
-    if (isCurrentOutOfStock) {
-      showToast('This item is currently out of stock.');
-      return;
+  // Auto-select the first in-stock variant when product loads
+  React.useEffect(() => {
+    if (product && Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
+      if (product.isVendorManageInventory) {
+        const firstInStock = product.variableProducts.findIndex((v: any) => {
+          const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
+          return q > 0;
+        });
+        if (firstInStock >= 0) {
+          setSelectedSizeIdx(firstInStock);
+        }
+      }
     }
-    const size = sizes.length > 0 ? sizes[selectedSizeIdx] || sizes[0] : '';
-    const vp = product.variableProducts?.[selectedSizeIdx];
-    addToBag(product, size, vp?.id);
-  };
+  }, [product?.id]);
 
   const activeVariant = product.variableProducts?.[selectedSizeIdx];
   const activePrice = Number(activeVariant?.sellPrice ?? activeVariant?.price ?? product.price);
   const activeMrp = Number(activeVariant?.price ?? activeVariant?.sellPrice ?? product.mrp);
 
-  const getVariantQty = (v: any): number | undefined => {
-    if (!v) return undefined;
-    if (typeof v.availableQty === 'number') return v.availableQty;
-    if (typeof v.availableQuantity === 'number') return v.availableQuantity;
-    return undefined;
-  };
-
   const isVariantOutOfStock = (v: any): boolean => {
-    if (product.isVendorManageInventory === false) return false;
-    const qty = getVariantQty(v);
-    if (qty !== undefined) {
-      return qty <= 0;
-    }
-    return !product.tagOk;
+    if (!product.isVendorManageInventory) return false;
+    if (!v) return !product.tagOk;
+    const qty = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
+    return qty <= 0;
   };
 
   const isCurrentOutOfStock = activeVariant
     ? isVariantOutOfStock(activeVariant)
-    : !product.tagOk;
+    : (product.isVendorManageInventory ? !product.tagOk : false);
+
+  const handleAddCurrent = () => {
+    if (isCurrentOutOfStock) {
+      showToast('This item is currently out of stock.');
+      return;
+    }
+    const vp = product.variableProducts?.[selectedSizeIdx];
+    const size = sizes.length > 0
+      ? sizes[selectedSizeIdx] || sizes[0]
+      : (vp?.attributes?.size || vp?.attributes?.title || vp?.name || 'Standard');
+    addToBag(product, size, vp?.id);
+  };
 
   const handleAskRep = () => {
     if (!isAuthenticated) {

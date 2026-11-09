@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useCartStore } from '../stores/useCartStore';
 import { useAppStore } from '../stores/useAppStore';
 import { SEO } from '../components/common/SEO';
 import { Phone, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -60,7 +61,14 @@ export const AuthPage: React.FC = () => {
     setSubmitting(false);
     if (res.status) {
       showToast('Successfully authenticated!');
-      navigate('/profile');
+      const pending = useCartStore.getState().pendingAddProduct;
+      if (pending) {
+        useCartStore.getState().addToBag(pending.product, pending.size, pending.variantId);
+        useCartStore.getState().setPendingAddProduct(null);
+        navigate('/bag');
+      } else {
+        navigate('/profile');
+      }
     } else {
       setErrorMsg(res.message);
     }

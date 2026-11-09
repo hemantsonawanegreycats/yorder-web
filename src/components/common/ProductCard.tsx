@@ -15,20 +15,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
   const [imgError, setImgError] = useState(false);
 
   const isOutOfStock = (() => {
-    if (product.isVendorManageInventory === false) return false;
+    if (!product.isVendorManageInventory) return false;
     if (Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
       return product.variableProducts.every((v) => {
-        const q =
-          typeof v.availableQty === 'number'
-            ? v.availableQty
-            : typeof v.availableQuantity === 'number'
-            ? v.availableQuantity
-            : undefined;
-        return q !== undefined ? q <= 0 : !product.tagOk;
+        const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
+        return q <= 0;
       });
     }
     return !product.tagOk;
   })();
+
+  const hasMultipleVariants = Array.isArray(product.variableProducts) && product.variableProducts.length > 1;
 
   const handleOpenProduct = () => {
     setPid(product.id);
@@ -46,6 +43,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isOutOfStock) return;
+    if (hasMultipleVariants) {
+      handleOpenProduct();
+      return;
+    }
     addToBag(product);
   };
 

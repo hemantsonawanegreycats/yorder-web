@@ -106,45 +106,32 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
     return seenCounts[sz] > 1 ? `${sz} (${seenCounts[sz]})` : sz;
   });
 
-  const isVendorManageInventory = vendor?.is_vendor_manage_inventory !== false;
+  const isVendorManageInventory = vendor?.is_vendor_manage_inventory === true;
   const variableProducts = Array.isArray(bp.variableProducts) ? bp.variableProducts : [];
 
   let isOutOfStock = false;
   let totalStockCount = 0;
 
   if (variableProducts.length > 0) {
-    let hasKnownStock = false;
     let allVariantsOut = true;
     for (const v of variableProducts) {
-      const q = typeof v?.availableQty === 'number'
-        ? v.availableQty
-        : typeof v?.availableQuantity === 'number'
-        ? v.availableQuantity
-        : undefined;
-      if (q !== undefined) {
-        hasKnownStock = true;
-        totalStockCount += Math.max(0, q);
-        if (q > 0) {
-          allVariantsOut = false;
-        }
+      const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
+      totalStockCount += Math.max(0, q);
+      if (q > 0) {
+        allVariantsOut = false;
       }
     }
-    if (hasKnownStock) {
-      isOutOfStock = isVendorManageInventory ? allVariantsOut : false;
-    } else {
-      const baseQty = bp.availableQuantity ?? bp.availableQty;
-      isOutOfStock = isVendorManageInventory && typeof baseQty === 'number' ? baseQty <= 0 : false;
-      totalStockCount = typeof baseQty === 'number' ? baseQty : 1;
-    }
+    // Only consider out of stock if vendor explicitly manages inventory
+    isOutOfStock = isVendorManageInventory ? allVariantsOut : false;
   } else {
-    const baseQty = bp.availableQuantity ?? bp.availableQty;
-    isOutOfStock = isVendorManageInventory && typeof baseQty === 'number' ? baseQty <= 0 : false;
-    totalStockCount = typeof baseQty === 'number' ? baseQty : 1;
+    const baseQty = Number(bp.availableQuantity ?? bp.availableQty ?? (isVendorManageInventory ? 0 : 1));
+    isOutOfStock = isVendorManageInventory ? baseQty <= 0 : false;
+    totalStockCount = baseQty;
   }
 
   const stockText = isOutOfStock
     ? 'Out of stock'
-    : totalStockCount > 0
+    : isVendorManageInventory && totalStockCount > 0
     ? `${totalStockCount} in stock`
     : 'In stock';
 
@@ -186,11 +173,13 @@ export const fetchProducts = async (params?: Record<string, any>): Promise<Produ
 };
 
 export const fetchProductById = async (id: string | number): Promise<Product | null> => {
-  const cleanId = String(id).replace('bp-', '');
+  const cleanId = String(id).replace(/\D/g, '');
+  if (!cleanId) return null;
   try {
     const resp = await apiClient.get(`/user/product/${cleanId}`);
-    if (resp.data?.status && resp.data?.data) {
-      return mapBackendToProduct(resp.data.data);
+    const productData = resp.data?.data ?? resp.data?.product ?? (resp.data?.id ? resp.data : null);
+    if (productData) {
+      return mapBackendToProduct(productData);
     }
   } catch (error) {
     console.error(`Failed to fetch real product ${id} from backend:`, error);

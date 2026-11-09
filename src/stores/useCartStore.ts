@@ -147,7 +147,7 @@ export const useCartStore = create<CartState>()(
         if (!variantId && product.variableProducts?.length) {
           const matching = product.variableProducts.find(
             (v: any) =>
-              (explicitVariantId && v.id === explicitVariantId) ||
+              (explicitVariantId && String(v.id) === String(explicitVariantId)) ||
               (v.size && String(v.size).toLowerCase() === selectedSize.toLowerCase()) ||
               (v.title && String(v.title).toLowerCase() === selectedSize.toLowerCase()) ||
               (v.attributes?.size && String(v.attributes.size).toLowerCase() === selectedSize.toLowerCase()) ||
@@ -162,29 +162,30 @@ export const useCartStore = create<CartState>()(
           variantId = matching?.id || product.variableProducts[0]?.id;
         }
 
-        // Out of stock guard
-        const variantObj = variantId && product.variableProducts?.length
-          ? product.variableProducts.find((v: any) => v.id === variantId)
-          : undefined;
+        // Out of stock guard (ONLY when vendor explicitly manages inventory)
+        const isVendorManage = product.isVendorManageInventory === true;
+        if (isVendorManage) {
+          const variantObj = variantId && product.variableProducts?.length
+            ? product.variableProducts.find((v: any) => String(v.id) === String(variantId))
+            : undefined;
 
-        const isVariantOut = variantObj
-          ? (typeof variantObj.availableQty === 'number'
-              ? variantObj.availableQty <= 0
-              : typeof variantObj.availableQuantity === 'number'
-              ? variantObj.availableQuantity <= 0
-              : !product.tagOk)
-          : !product.tagOk;
-
-        if (product.isVendorManageInventory !== false && isVariantOut) {
-          useAppStore.getState().showToast('This item is currently out of stock.');
-          return;
+          if (variantObj) {
+            const qty = Number(variantObj.availableQty ?? variantObj.availableQuantity ?? 0);
+            if (qty <= 0) {
+              useAppStore.getState().showToast('This variant is currently out of stock.');
+              return;
+            }
+          } else if (!product.tagOk) {
+            useAppStore.getState().showToast('This item is currently out of stock.');
+            return;
+          }
         }
 
         // 2. Check if item already exists in bag
         const existingIdx = state.bag.findIndex(
           (b) =>
             String(b.pid) === String(product.id) &&
-            (variantId ? b.variantId === variantId : b.size === selectedSize)
+            (variantId ? String(b.variantId) === String(variantId) : b.size === selectedSize)
         );
 
         if (existingIdx >= 0) {
@@ -198,7 +199,7 @@ export const useCartStore = create<CartState>()(
           pid: String(product.id),
           size: selectedSize,
           quantity: 1,
-          variantId,
+          variantId: variantId ? Number(variantId) : undefined,
           product,
         };
 
@@ -213,8 +214,9 @@ export const useCartStore = create<CartState>()(
           if (cart?.id) {
             set({ cartId: cart.id, minOrderValue: cart.minOrderValue || 0 });
 
+            const cleanProductId = Number(String(product.id).replace(/\D/g, ''));
             const requestBody: any = {
-              product_id: Number(product.id),
+              product_id: cleanProductId,
               quantity: 1,
             };
             if (variantId) {
@@ -228,8 +230,8 @@ export const useCartStore = create<CartState>()(
               set((s) => ({
                 bag: s.bag.map((b) =>
                   String(b.pid) === String(product.id) &&
-                  (variantId ? b.variantId === variantId : b.size === selectedSize)
-                    ? { ...b, cartItemId: createdItemId, variantId }
+                  (variantId ? String(b.variantId) === String(variantId) : b.size === selectedSize)
+                    ? { ...b, cartItemId: createdItemId, variantId: variantId ? Number(variantId) : undefined }
                     : b
                 ),
               }));
