@@ -12,6 +12,7 @@ interface AppState {
   sort: number;
   pid: string | number;
   sid: string | number;
+  orderId?: string | number;
   shelfTab: number;
   idx: number;
   toast: string | null;
@@ -64,7 +65,7 @@ export const routeToPath = (route: AppRoute, extra?: Record<string, any>): strin
     case 'bag':
       return '/bag';
     case 'order':
-      return '/order';
+      return extra?.orderId ? `/order?order_id=${extra.orderId}` : '/order';
     case 'profile':
       return '/profile';
     default:

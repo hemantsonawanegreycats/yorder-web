@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useCartStore } from '../../stores/useCartStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useOrdersQuery } from '../../api/orders.api';
 import { AppRoute } from '../../types';
 import { Menu, X } from 'lucide-react';
 
@@ -9,7 +10,15 @@ export const Header: React.FC = () => {
   const { theme, setTheme, route, go, deliverTo, q, setQ, setAddressModalOpen } = useAppStore();
   const bag = useCartStore((s) => s.bag);
   const { isAuthenticated, user, setAuthModalOpen } = useAuthStore();
+  const { data: orders } = useOrdersQuery();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const activeOrder = isAuthenticated
+    ? orders?.find((o: any) => {
+        const s = (o.current_order_status?.name || o.status || '').toLowerCase();
+        return !o.orderCompleted && s !== 'delivered' && s !== 'cancelled';
+      })
+    : null;
 
   const handleNavClick = (targetRoute: AppRoute) => {
     if (targetRoute === 'chat' && !isAuthenticated) {
@@ -139,6 +148,18 @@ export const Header: React.FC = () => {
           </button>
         </div>
 
+        {/* Active Order Live Tracker Pill */}
+        {activeOrder && (
+          <button
+            onClick={() => go('order', { orderId: activeOrder.id })}
+            className="yc hidden sm:flex items-center gap-1.5 h-[34px] px-3 rounded-[17px] bg-[var(--gold)]/10 border border-[var(--gold)]/35 text-[var(--gold)] text-[11px] font-semibold hover:bg-[var(--gold)]/20 transition-all shadow-xs"
+            title={`Track active order #${activeOrder.id}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-[var(--gold)] animate-pulse" />
+            <span>Track #{activeOrder.id}</span>
+          </button>
+        )}
+
         {/* Bag Pill Button */}
         <button
           onClick={() => go('bag')}
@@ -204,6 +225,21 @@ export const Header: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
+            {activeOrder && (
+              <button
+                onClick={() => {
+                  go('order', { orderId: activeOrder.id });
+                  setMobileMenuOpen(false);
+                }}
+                className="yc flex items-center justify-between p-3 rounded-lg text-sm font-semibold text-[var(--gold)] bg-[var(--gold)]/10 border border-[var(--gold)]/25"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[var(--gold)] animate-pulse" />
+                  <span>Track Active Delivery #{activeOrder.id}</span>
+                </div>
+                <span className="text-xs">›</span>
+              </button>
+            )}
             {navItems.map((n) => (
               <button
                 key={n.route}

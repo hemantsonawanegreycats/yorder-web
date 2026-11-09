@@ -279,7 +279,8 @@ export const ProfilePage: React.FC = () => {
               {orders.map((ord: any) => (
                 <div
                   key={ord.id}
-                  className="p-5 rounded-[18px] bg-[var(--s0)] border border-[var(--bd)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                  onClick={() => navigate(`/order?order_id=${ord.id}`)}
+                  className="p-5 rounded-[18px] bg-[var(--s0)] border border-[var(--bd)] hover:border-[var(--gold)] cursor-pointer transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
                 >
                   <div>
                     <div className="flex items-center gap-3">
@@ -290,18 +291,26 @@ export const ProfilePage: React.FC = () => {
                         {ord.status || 'PROCESSING'}
                       </span>
                     </div>
-                    <div className="font-medium text-sm text-[var(--t1)] mt-2">
+                    <div className="font-medium text-sm text-[var(--t1)] mt-2 group-hover:text-[var(--gold)] transition-colors">
                       {ord.items?.length || 1} Item(s) from showroom
                     </div>
                     <div className="text-xs text-[var(--t3)] mt-1 font-mono">
                       {new Date(ord.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Payment: {ord.payment_method || 'Pay on Keep'}
                     </div>
                   </div>
-                  <div className="flex items-baseline md:items-end flex-col">
+                  <div className="flex items-baseline md:items-end flex-col gap-2">
                     <span className="font-semibold text-base text-[var(--t1)]">
                       {rupee(ord.total || ord.amount || 0)}
                     </span>
-                    <span className="text-[10px] text-[var(--t3)]">Doorstep trial guaranteed</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/order?order_id=${ord.id}`);
+                      }}
+                      className="px-3.5 py-1.5 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-[10.5px] font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                    >
+                      Track Order ›
+                    </button>
                   </div>
                 </div>
               ))}
