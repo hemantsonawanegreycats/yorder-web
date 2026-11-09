@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Product, Store } from '../../types';
 import { useAppStore } from '../../stores/useAppStore';
 import { useCartStore } from '../../stores/useCartStore';
+import { useVendorsQuery } from '../../api/vendors.api';
 import { rupee } from '../../utils/formatters';
 
 interface ProductCardProps {
@@ -10,9 +11,13 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
-  const { go, setPid, setSid } = useAppStore();
+  const { go, setPid, setSid, showToast } = useAppStore();
   const addToBag = useCartStore((s) => s.addToBag);
   const [imgError, setImgError] = useState(false);
+  const { data: stores } = useVendorsQuery();
+
+  const currentStore = store || (stores && product.sid ? stores[product.sid] : undefined);
+  const isStoreClosed = currentStore ? currentStore.isOpen === false : false;
 
   const isOutOfStock = (() => {
     if (product.tagOk === false) return true;
@@ -52,6 +57,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isOutOfStock) return;
+    if (isStoreClosed) {
+      showToast(`${currentStore?.name || 'Showroom'} is currently closed.`);
+      handleOpenProduct();
+      return;
+    }
     if (hasMultipleVariants) {
       handleOpenProduct();
       return;
@@ -59,9 +69,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
     addToBag(product);
   };
 
-  const storeName = store?.name || product.brand || 'Local Showroom';
-  const storeRating = store?.rating || product.rating || '4.8';
-  const etaText = store ? `${store.eta} · ${store.dist}` : 'Today · 1.5 km';
+  const storeName = currentStore?.name || product.brand || 'Local Showroom';
+  const storeRating = currentStore?.rating || product.rating || '4.8';
+  const etaText = currentStore
+    ? isStoreClosed
+      ? (currentStore.hours || 'Store Closed')
+      : `${currentStore.eta} · ${currentStore.dist}`
+    : 'Today · 1.5 km';
 
   return (
     <div className="group flex flex-col w-full text-left">
@@ -75,15 +89,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
           alt={product.name}
           onError={() => setImgError(true)}
           className={`max-h-full max-w-full object-contain group-hover:scale-105 transition-all duration-300 ${
-            isOutOfStock ? 'opacity-65 grayscale-[25%]' : ''
+            isOutOfStock ? 'opacity-50 grayscale' : isStoreClosed ? 'opacity-70 grayscale-[20%]' : ''
           }`}
           loading="lazy"
         />
 
-        {/* Out of Stock or Off Badge */}
+        {/* Out of Stock, Store Closed, or Off Badge */}
         {isOutOfStock ? (
           <div className="absolute left-[7px] top-[7px] px-[7px] py-[3.5px] rounded-[6px] bg-[#EF4444] font-bold text-[8px] tracking-wider leading-none text-white shadow-md uppercase">
             Sold Out
+          </div>
+        ) : isStoreClosed ? (
+          <div className="absolute left-[7px] top-[7px] px-[7px] py-[3.5px] rounded-[6px] bg-[#0B0B0C]/90 backdrop-blur-md font-semibold text-[7.5px] tracking-wider leading-none text-neutral-300 border border-white/15 shadow-sm uppercase flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+            Closed
           </div>
         ) : product.off ? (
           <div className="absolute left-[7px] top-[7px] px-[6px] py-[3px] rounded-[6px] bg-[#0B0B0C]/85 backdrop-blur-md font-medium text-[8px] leading-none text-[var(--gold)] border border-white/10 shadow-sm">
@@ -91,7 +110,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
           </div>
         ) : null}
 
-        {/* Quick Add Button or Out of Stock indicator */}
+        {/* Quick Add Button, Closed indicator, or Out of Stock indicator */}
         {isOutOfStock ? (
           <button
             disabled={true}
@@ -101,6 +120,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
             className="absolute right-[7px] bottom-[7px] px-[8px] py-[4px] rounded-full bg-black/85 backdrop-blur-sm text-[8px] font-semibold uppercase tracking-wider text-[#EF4444] border border-[#EF4444]/40 cursor-not-allowed shadow-sm select-none"
           >
             Out of stock
+          </button>
+        ) : isStoreClosed ? (
+          <button
+            onClick={handleAdd}
+            title={`${currentStore?.name || 'Showroom'} is currently closed · Click to view details & contact rep`}
+            aria-label="Store closed"
+            className="yc absolute right-[7px] bottom-[7px] px-[8px] py-[4px] rounded-full bg-[#1A1918]/90 backdrop-blur-sm text-[8px] font-medium uppercase tracking-wider text-neutral-300 border border-white/15 hover:border-[var(--gold)] hover:text-white transition-all shadow-sm select-none"
+          >
+            Store Closed
           </button>
         ) : (
           <button
@@ -148,7 +176,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
       </div>
 
       {/* ETA Subtitle */}
-      <div className="text-[9px] font-normal leading-none text-[var(--t3)] mt-[4px]">
+      <div className={`text-[9px] font-normal leading-none mt-[4px] truncate ${isStoreClosed ? 'text-neutral-400 font-medium' : 'text-[var(--t3)]'}`}>
         {etaText}
       </div>
     </div>

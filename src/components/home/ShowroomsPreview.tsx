@@ -63,11 +63,12 @@ export const ShowroomsPreview: React.FC = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-[13.5px] leading-[1.1] text-[var(--t1)] group-hover:text-[var(--gold)] transition-colors truncate">
-                  {s.name}
+                <div className="flex items-center gap-1.5 font-semibold text-[13.5px] leading-[1.1] text-[var(--t1)] group-hover:text-[var(--gold)] transition-colors truncate">
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.isOpen !== false ? 'bg-[var(--ok)] animate-pulse' : 'bg-neutral-500'}`} />
+                  <span className="truncate">{s.name}</span>
                 </div>
                 <div className="font-normal text-[10.5px] leading-[1.5] text-[var(--t3)] mt-[6px] truncate">
-                  {s.meta}
+                  <span className={s.isOpen !== false ? 'text-[var(--ok)] font-medium' : 'text-neutral-400 font-medium'}>{s.hours}</span> · {s.meta}
                 </div>
               </div>
 
@@ -76,7 +77,7 @@ export const ShowroomsPreview: React.FC = () => {
                   ★ {s.rating}
                 </div>
                 <div className="font-normal text-[9.5px] leading-none text-[var(--t3)] mt-[7px]">
-                  {s.eta}
+                  {s.isOpen !== false ? s.eta : 'Closed'}
                 </div>
               </div>
             </div>
