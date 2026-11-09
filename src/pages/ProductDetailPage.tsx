@@ -114,7 +114,13 @@ export const ProductDetailPage: React.FC = () => {
     ? isVariantOutOfStock(activeVariant)
     : (product.isVendorManageInventory ? !product.tagOk : false);
 
+  const isStoreOpenNow = store ? store.isOpen !== false : true;
+
   const handleAddCurrent = () => {
+    if (!isStoreOpenNow) {
+      showToast(`${store?.name || 'Showroom'} is currently closed.`);
+      return;
+    }
     if (isCurrentOutOfStock) {
       showToast('This item is currently out of stock.');
       return;
@@ -394,8 +400,30 @@ export const ProductDetailPage: React.FC = () => {
               </>
             )}
 
-            {/* Real On-Demand Showroom Dispatch / Out of stock indicator */}
-            {isCurrentOutOfStock ? (
+            {/* Real On-Demand Showroom Dispatch / Closed / Out of stock indicator */}
+            {!isStoreOpenNow ? (
+              <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-neutral-500" />
+                    <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                      Showroom Currently Closed
+                    </span>
+                  </div>
+                  <span className="font-medium text-[10px] text-neutral-300 bg-neutral-800 px-2 py-0.5 rounded-full border border-neutral-700">
+                    {store?.hours || 'Closed'}
+                  </span>
+                </div>
+                <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
+                  <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span> is outside operating hours. You can chat with the shop rep below to enquire about availability once doors open.
+                </div>
+                <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                  <span>📍 {store?.addr || 'Bandra West'}</span>
+                  <span>·</span>
+                  <span>💬 Showroom chat available</span>
+                </div>
+              </div>
+            ) : isCurrentOutOfStock ? (
               <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -449,18 +477,18 @@ export const ProductDetailPage: React.FC = () => {
             {/* Action CTAs */}
             <div className="flex items-center gap-2.5 mt-4">
               <button
-                disabled={isCurrentOutOfStock}
+                disabled={!isStoreOpenNow || isCurrentOutOfStock}
                 onClick={handleAddCurrent}
                 className="yc flex-1 h-[44px] rounded-[22px] flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
-                  background: isCurrentOutOfStock ? 'var(--s2)' : 'var(--acc)',
-                  color: isCurrentOutOfStock ? 'var(--t3)' : 'var(--on-acc)',
+                  background: (!isStoreOpenNow || isCurrentOutOfStock) ? 'var(--s2)' : 'var(--acc)',
+                  color: (!isStoreOpenNow || isCurrentOutOfStock) ? 'var(--t3)' : 'var(--on-acc)',
                 }}
               >
                 <span className="font-semibold text-[12.5px]">
-                  {isCurrentOutOfStock ? 'Out of stock' : 'Add to bag'}
+                  {!isStoreOpenNow ? 'Store Closed' : isCurrentOutOfStock ? 'Out of stock' : 'Add to bag'}
                 </span>
-                {!isCurrentOutOfStock && (
+                {isStoreOpenNow && !isCurrentOutOfStock && (
                   <span className="font-medium text-[11px] opacity-80">
                     {rupee(activePrice)}
                   </span>

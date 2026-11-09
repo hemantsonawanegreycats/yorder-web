@@ -297,8 +297,18 @@ export const StorePage: React.FC = () => {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-[10px] mb-[14px]">
-                <span className="flex items-center gap-[7px] px-[11px] py-[6px] rounded-[14px] bg-[#0B0B0C]/60 backdrop-blur-[8px] border border-[#9BD8A0]/35 font-medium text-[8.5px] tracking-[0.14em] text-[#9BD8A0]">
-                  <span className="w-[5px] h-[5px] rounded-full bg-[#9BD8A0] animate-pulse" />
+                <span
+                  className={`flex items-center gap-[7px] px-[11px] py-[6px] rounded-[14px] backdrop-blur-[8px] font-medium text-[8.5px] tracking-[0.14em] ${
+                    currentStore.isOpen !== false
+                      ? 'bg-[#0B0B0C]/60 border border-[#9BD8A0]/35 text-[#9BD8A0]'
+                      : 'bg-[#0B0B0C]/70 border border-neutral-700 text-neutral-400'
+                  }`}
+                >
+                  <span
+                    className={`w-[5px] h-[5px] rounded-full ${
+                      currentStore.isOpen !== false ? 'bg-[#9BD8A0] animate-pulse' : 'bg-neutral-500'
+                    }`}
+                  />
                   {currentStore.hours}
                 </span>
               </div>

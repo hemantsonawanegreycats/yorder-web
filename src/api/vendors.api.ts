@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { Store } from '../types';
+import { getStoreStatusDetails } from '../utils/storeStatus';
 
 export interface BackendVendor {
   id: number;
@@ -74,8 +75,8 @@ export const mapBackendToStore = (bv: any): Store => {
   const rep = bv.owner?.first_name || words[0] || 'Floor Team';
   const repIni = rep.slice(0, 2).toUpperCase();
 
-  const openSlot = Array.isArray(bv.open_hours) ? bv.open_hours.find((h: any) => !h?.isClosed) : null;
-  const hoursStr = openSlot?.close ? `OPEN TILL ${openSlot.close}` : 'OPEN TODAY';
+  const statusInfo = getStoreStatusDetails(bv.open_hours);
+  const isStoreActive = bv.isOnline !== false && statusInfo.isOpen;
 
   const rawRating = bv.rating && Number(bv.rating) > 0 ? Number(bv.rating).toFixed(1) : 'New';
   const ratingCount = bv.rating_count ? Number(bv.rating_count) : undefined;
@@ -91,13 +92,15 @@ export const mapBackendToStore = (bv: any): Store => {
     eta: '45 min',
     dist: 'Nearby',
     count: countStr,
-    hours: hoursStr,
+    hours: statusInfo.statusText,
     img,
     repName: rep,
     repIni,
     repLine: `${rep} is on the floor`,
     meta: `${bv.address?.nearBy || bv.address?.city || 'Bandra'} · ${countStr ? `${countStr} items` : 'Live stock'}`,
     isOnline: bv.isOnline ?? true,
+    isOpen: isStoreActive,
+    openHours: Array.isArray(bv.open_hours) ? bv.open_hours : [],
     lat: bv.address?.latitude ? parseFloat(String(bv.address.latitude)) : undefined,
     lng: bv.address?.longitude ? parseFloat(String(bv.address.longitude)) : undefined,
   };

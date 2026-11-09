@@ -17,6 +17,8 @@ export interface Store {
   repLine: string;
   meta: string;
   isOnline?: boolean;
+  isOpen?: boolean;
+  openHours?: any[];
   lat?: number;
   lng?: number;
 }

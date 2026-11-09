@@ -186,19 +186,28 @@ export const ShowroomsPage: React.FC = () => {
                 const s = stores ? stores[sidKey] : null;
                 if (!s) return null;
 
+                const isOpen = s.isOpen !== false;
+
                 return (
                   <div
                     key={sidKey}
                     onClick={() => handleOpenStore(sidKey)}
                     className="yc flex items-center gap-[14px] py-[15px] border-t border-[var(--s2)] cursor-pointer group"
                   >
-                    <span className="w-[7px] h-[7px] rounded-full bg-[var(--ok)] flex-shrink-0 animate-pulse" />
+                    <span
+                      className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${
+                        isOpen ? 'bg-[var(--ok)] animate-pulse' : 'bg-neutral-600'
+                      }`}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-[13.5px] leading-none text-[var(--t1)] group-hover:text-[var(--gold)] transition-colors truncate">
                         {s.name}
                       </div>
                       <div className="font-normal text-[10.5px] leading-none text-[var(--t3)] mt-[7px] truncate">
-                        {s.count} in stock · {s.eta} to your door
+                        <span className={isOpen ? 'text-[var(--ok)] font-medium' : 'text-neutral-400'}>
+                          {s.hours}
+                        </span>
+                        {s.count ? ` · ${s.count} items` : ''} · {s.eta} to your door
                       </div>
                     </div>
                     <span className="font-mono font-medium text-[11.5px] text-[var(--gold)] flex-shrink-0">
