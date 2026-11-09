@@ -1,3 +1,6 @@
+# 1. Force LiteSpeed/Apache to prioritize React index.html above any PHP file
+DirectoryIndex index.html index.php
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
@@ -5,6 +8,10 @@
   # Enforce HTTPS
   RewriteCond %{HTTPS} !=on
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Redirect direct requests for old WordPress index.php or default.php to /
+  RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /(index|default)\.php[^\ ]*\ HTTP/ [NC]
+  RewriteRule ^(index|default)\.php$ / [R=301,L]
 
   # Don't rewrite real files, directories, or API requests
   RewriteRule ^index\.html$ - [L]
@@ -14,6 +21,11 @@
 
   # Route all other URLs to React index.html
   RewriteRule . /index.html [L]
+</IfModule>
+
+# Prevent LiteSpeed from caching old PHP responses
+<IfModule LiteSpeed>
+  CacheLookup off
 </IfModule>
 
 # Browser Caching for Assets
