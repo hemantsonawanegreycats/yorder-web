@@ -30,6 +30,8 @@ jobs:
           VITE_AUTH_TOKEN_KEY: yorder_web_auth_token
           VITE_BRAND_NAME: Yorder
           VITE_BRAND_TAGLINE: Real stores, real stock, counted by hand
+          VITE_RAZORPAY_KEY_ID: rzp_live_q8hoDqsXGIQoqd
+          VITE_RAZORPAY_NAME: Yorder
         run: npm run build
 
       - name: 5. Sync dist/ to Hostinger via FTP
