@@ -85,6 +85,10 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleAddCurrent = () => {
+    if (isCurrentOutOfStock) {
+      showToast('This item is currently out of stock.');
+      return;
+    }
     const size = sizes.length > 0 ? sizes[selectedSizeIdx] || sizes[0] : '';
     const vp = product.variableProducts?.[selectedSizeIdx];
     addToBag(product, size, vp?.id);
@@ -93,6 +97,26 @@ export const ProductDetailPage: React.FC = () => {
   const activeVariant = product.variableProducts?.[selectedSizeIdx];
   const activePrice = Number(activeVariant?.sellPrice ?? activeVariant?.price ?? product.price);
   const activeMrp = Number(activeVariant?.price ?? activeVariant?.sellPrice ?? product.mrp);
+
+  const getVariantQty = (v: any): number | undefined => {
+    if (!v) return undefined;
+    if (typeof v.availableQty === 'number') return v.availableQty;
+    if (typeof v.availableQuantity === 'number') return v.availableQuantity;
+    return undefined;
+  };
+
+  const isVariantOutOfStock = (v: any): boolean => {
+    if (product.isVendorManageInventory === false) return false;
+    const qty = getVariantQty(v);
+    if (qty !== undefined) {
+      return qty <= 0;
+    }
+    return !product.tagOk;
+  };
+
+  const isCurrentOutOfStock = activeVariant
+    ? isVariantOutOfStock(activeVariant)
+    : !product.tagOk;
 
   const handleAskRep = () => {
     if (!isAuthenticated) {
@@ -201,12 +225,20 @@ export const ProductDetailPage: React.FC = () => {
                   <img
                     src={currentImage}
                     alt={product.name}
-                    className="max-h-[92%] max-w-[92%] object-contain"
+                    className={`max-h-[92%] max-w-[92%] object-contain transition-opacity ${
+                      isCurrentOutOfStock ? 'opacity-75 grayscale-[20%]' : ''
+                    }`}
                   />
                   {/* Shelf Tag Pill */}
-                  <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#9BD8A0] border border-white/10 shadow-sm">
-                    ● ON THE SHELF NOW
-                  </div>
+                  {isCurrentOutOfStock ? (
+                    <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#EF4444] border border-[#EF4444]/30 shadow-sm">
+                      ○ CURRENTLY OUT OF STOCK
+                    </div>
+                  ) : (
+                    <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#9BD8A0] border border-white/10 shadow-sm">
+                      ● ON THE SHELF NOW
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -315,37 +347,37 @@ export const ProductDetailPage: React.FC = () => {
                   {sizes.map((sz, idx) => {
                     const isSelected = selectedSizeIdx === idx;
                     const vp = product.variableProducts?.[idx];
-                    const isOutOfStock =
-                      vp && typeof vp.availableQuantity === 'number'
-                        ? vp.availableQuantity <= 0
-                        : !product.tagOk;
+                    const isVariantOut = isVariantOutOfStock(vp);
                     return (
                       <button
                         key={`${sz}-${idx}`}
-                        disabled={isOutOfStock}
                         onClick={() => setSelectedSizeIdx(idx)}
                         className="yc h-[44px] rounded-[9px] flex flex-col items-center justify-center gap-0.5 transition-all"
                         style={{
                           background: isSelected ? 'var(--acc)' : 'transparent',
                           border: isSelected
                             ? 'none'
-                            : isOutOfStock
+                            : isVariantOut
                             ? '1px solid var(--s2)'
                             : '1px solid var(--bd)',
-                          opacity: isOutOfStock ? 0.55 : 1,
-                          cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                          opacity: isVariantOut && !isSelected ? 0.6 : 1,
                         }}
                       >
                         <span
                           className="font-semibold text-[11.5px] leading-none"
                           style={{
-                            color: isSelected ? 'var(--on-acc)' : isOutOfStock ? 'var(--t3)' : 'var(--t1)',
+                            color: isSelected ? 'var(--on-acc)' : isVariantOut ? 'var(--t3)' : 'var(--t1)',
                           }}
                         >
                           {sz}
                         </span>
-                        <span className="font-normal text-[8px] leading-none text-[var(--t3)]">
-                          {isOutOfStock ? 'Out of stock' : 'In stock'}
+                        <span
+                          className="font-normal text-[8px] leading-none"
+                          style={{
+                            color: isSelected ? 'var(--on-acc)' : isVariantOut ? '#EF4444' : 'var(--t3)',
+                          }}
+                        >
+                          {isVariantOut ? 'Out of stock' : 'In stock'}
                         </span>
                       </button>
                     );
@@ -354,63 +386,77 @@ export const ProductDetailPage: React.FC = () => {
               </>
             )}
 
-            {/* Real On-Demand Showroom Dispatch */}
-            <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse" />
-                  <span className="font-semibold text-[12.5px] text-[var(--t1)]">
-                    Instant Showroom Dispatch
+            {/* Real On-Demand Showroom Dispatch / Out of stock indicator */}
+            {isCurrentOutOfStock ? (
+              <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
+                    <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                      Currently Sold Out on Floor
+                    </span>
+                  </div>
+                  <span className="font-medium text-[10px] text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full border border-[#EF4444]/20">
+                    Out of Stock
                   </span>
                 </div>
-                <span className="font-medium text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 px-2 py-0.5 rounded-full border border-[var(--ok)]/20">
-                  {isFashionProduct ? 'Free Trial' : 'Verified Stock'}
-                </span>
+                <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
+                  This item is currently out of stock at <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span>. You can chat with the showroom rep below to enquire about restock.
+                </div>
+                <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                  <span>📍 {store?.addr || 'Bandra West'}</span>
+                  <span>·</span>
+                  <span>💬 Showroom chat available</span>
+                </div>
               </div>
-              <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
-                Dispatched directly from <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span>.{' '}
-                {isFashionProduct
-                  ? 'Rider waits while you try it on.'
-                  : 'Delivered directly from the showroom floor.'}
+            ) : (
+              <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse" />
+                    <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                      Instant Showroom Dispatch
+                    </span>
+                  </div>
+                  <span className="font-medium text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 px-2 py-0.5 rounded-full border border-[var(--ok)]/20">
+                    {isFashionProduct ? 'Free Trial' : 'Verified Stock'}
+                  </span>
+                </div>
+                <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
+                  Dispatched directly from <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span>.{' '}
+                  {isFashionProduct
+                    ? 'Rider waits while you try it on.'
+                    : 'Delivered directly from the showroom floor.'}
+                </div>
+                <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                  <span>⏱ {store?.eta || '45 min'}</span>
+                  <span>·</span>
+                  <span>📍 {store?.addr || 'Bandra West'}</span>
+                  <span>·</span>
+                  <span>🚪 {isFashionProduct ? 'Try at door' : 'Doorstep delivery'}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
-                <span>⏱ {store?.eta || '45 min'}</span>
-                <span>·</span>
-                <span>📍 {store?.addr || 'Bandra West'}</span>
-                <span>·</span>
-                <span>🚪 {isFashionProduct ? 'Try at door' : 'Doorstep delivery'}</span>
-              </div>
-            </div>
+            )}
 
             {/* Action CTAs */}
             <div className="flex items-center gap-2.5 mt-4">
               <button
-                disabled={
-                  activeVariant && typeof activeVariant.availableQuantity === 'number'
-                    ? activeVariant.availableQuantity <= 0
-                    : !product.tagOk
-                }
+                disabled={isCurrentOutOfStock}
                 onClick={handleAddCurrent}
-                className="yc flex-1 h-[44px] rounded-[22px] flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="yc flex-1 h-[44px] rounded-[22px] flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
-                  background:
-                    activeVariant && typeof activeVariant.availableQuantity === 'number' && activeVariant.availableQuantity <= 0
-                      ? 'var(--s2)'
-                      : 'var(--acc)',
-                  color:
-                    activeVariant && typeof activeVariant.availableQuantity === 'number' && activeVariant.availableQuantity <= 0
-                      ? 'var(--t3)'
-                      : 'var(--on-acc)',
+                  background: isCurrentOutOfStock ? 'var(--s2)' : 'var(--acc)',
+                  color: isCurrentOutOfStock ? 'var(--t3)' : 'var(--on-acc)',
                 }}
               >
                 <span className="font-semibold text-[12.5px]">
-                  {activeVariant && typeof activeVariant.availableQuantity === 'number' && activeVariant.availableQuantity <= 0
-                    ? 'Out of stock'
-                    : 'Add to bag'}
+                  {isCurrentOutOfStock ? 'Out of stock' : 'Add to bag'}
                 </span>
-                <span className="font-medium text-[11px] opacity-80">
-                  {rupee(activePrice)}
-                </span>
+                {!isCurrentOutOfStock && (
+                  <span className="font-medium text-[11px] opacity-80">
+                    {rupee(activePrice)}
+                  </span>
+                )}
               </button>
               <button
                 onClick={handleAskRep}
@@ -425,14 +471,20 @@ export const ProductDetailPage: React.FC = () => {
               <div className="mt-3.5 p-3 rounded-[14px] bg-[var(--s0)] border border-[var(--bd)] flex items-center gap-2.5">
                 <div className="relative w-[34px] h-[34px] rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-medium text-[11px] text-[var(--tw)] flex-shrink-0">
                   {store.repIni}
-                  <span className="absolute right-0 bottom-0 w-[8px] h-[8px] rounded-full bg-[var(--ok)] border-2 border-[var(--s0)]" />
+                  <span
+                    className={`absolute right-0 bottom-0 w-[8px] h-[8px] rounded-full border-2 border-[var(--s0)] ${
+                      isCurrentOutOfStock ? 'bg-[var(--t3)]' : 'bg-[var(--ok)]'
+                    }`}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-[11.5px] text-[var(--t1)] truncate">
-                    {store.repName} can hold this
+                    {isCurrentOutOfStock
+                      ? `Ask ${store.repName} about restock`
+                      : `${store.repName} can hold this`}
                   </div>
                   <div className="font-normal text-[9.5px] text-[var(--t3)] mt-0.5">
-                    One hour, no card needed
+                    {isCurrentOutOfStock ? 'Chat directly with floor rep' : 'One hour, no card needed'}
                   </div>
                 </div>
               </div>

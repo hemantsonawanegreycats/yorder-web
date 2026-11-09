@@ -14,6 +14,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
   const addToBag = useCartStore((s) => s.addToBag);
   const [imgError, setImgError] = useState(false);
 
+  const isOutOfStock = (() => {
+    if (product.isVendorManageInventory === false) return false;
+    if (Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
+      return product.variableProducts.every((v) => {
+        const q =
+          typeof v.availableQty === 'number'
+            ? v.availableQty
+            : typeof v.availableQuantity === 'number'
+            ? v.availableQuantity
+            : undefined;
+        return q !== undefined ? q <= 0 : !product.tagOk;
+      });
+    }
+    return !product.tagOk;
+  })();
+
   const handleOpenProduct = () => {
     setPid(product.id);
     go('product', { pid: product.id });
@@ -29,6 +45,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isOutOfStock) return;
     addToBag(product);
   };
 
@@ -47,26 +64,41 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
           src={imgError ? 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=70' : product.img}
           alt={product.name}
           onError={() => setImgError(true)}
-          className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+          className={`max-h-full max-w-full object-contain group-hover:scale-105 transition-all duration-300 ${
+            isOutOfStock ? 'opacity-65 grayscale-[25%]' : ''
+          }`}
           loading="lazy"
         />
 
-        {/* Off Badge */}
-        {product.off && (
+        {/* Out of Stock or Off Badge */}
+        {isOutOfStock ? (
+          <div className="absolute left-[7px] top-[7px] px-[6px] py-[3px] rounded-[6px] bg-[#EF4444]/90 backdrop-blur-md font-semibold text-[7.5px] tracking-wider leading-none text-white border border-[#EF4444]/30 shadow-sm uppercase">
+            Sold Out
+          </div>
+        ) : product.off ? (
           <div className="absolute left-[7px] top-[7px] px-[6px] py-[3px] rounded-[6px] bg-[#0B0B0C]/85 backdrop-blur-md font-medium text-[8px] leading-none text-[var(--gold)] border border-white/10 shadow-sm">
             {product.off}
           </div>
-        )}
+        ) : null}
 
-        {/* Quick Add Button */}
-        <button
-          onClick={handleAdd}
-          title="Add to bag"
-          aria-label={`Add ${product.name} to bag`}
-          className="yc absolute right-[7px] bottom-[7px] w-[28px] h-[28px] rounded-full bg-[#0B0B0C] shadow-md border border-white/10 flex items-center justify-center font-normal text-[15px] leading-none text-white hover:bg-[var(--gold)] hover:text-black active:scale-95 transition-all"
-        >
-          +
-        </button>
+        {/* Quick Add Button or Out of Stock indicator */}
+        {isOutOfStock ? (
+          <div
+            title="Currently out of stock"
+            className="absolute right-[7px] bottom-[7px] px-[7px] py-[3px] rounded-[6px] bg-black/75 backdrop-blur-sm text-[7.5px] font-medium uppercase tracking-wider text-neutral-400 border border-white/10"
+          >
+            Out of stock
+          </div>
+        ) : (
+          <button
+            onClick={handleAdd}
+            title="Add to bag"
+            aria-label={`Add ${product.name} to bag`}
+            className="yc absolute right-[7px] bottom-[7px] w-[28px] h-[28px] rounded-full bg-[#0B0B0C] shadow-md border border-white/10 flex items-center justify-center font-normal text-[15px] leading-none text-white hover:bg-[var(--gold)] hover:text-black active:scale-95 transition-all"
+          >
+            +
+          </button>
+        )}
       </div>
 
       {/* Store & Rating */}

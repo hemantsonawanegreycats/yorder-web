@@ -400,17 +400,19 @@ export const StorePage: React.FC = () => {
                     <img
                       src={p.img}
                       alt={p.name}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      className={`max-h-full max-w-full object-contain group-hover:scale-105 transition-all duration-300 ${
+                        !p.tagOk ? 'opacity-65 grayscale-[25%]' : ''
+                      }`}
                     />
                     {/* Stock Tag Badge */}
                     <div
                       className="absolute left-[8px] top-[8px] px-[8px] py-[4px] rounded-[9px] font-medium text-[8.5px] leading-none backdrop-blur-[8px] shadow-sm"
                       style={{
                         background: 'rgba(11,11,12,.85)',
-                        color: p.tagOk ? '#9BD8A0' : '#C8A06A',
+                        color: p.tagOk ? '#9BD8A0' : '#EF4444',
                       }}
                     >
-                      {p.stock}
+                      {p.tagOk ? p.stock : 'Out of stock'}
                     </div>
                   </div>
 
@@ -428,12 +430,21 @@ export const StorePage: React.FC = () => {
                     <span className="font-semibold text-[13.5px] leading-none text-[var(--t1)]">
                       {rupee(p.price)}
                     </span>
-                    <button
-                      onClick={() => addToBag(p)}
-                      className="yc h-[28px] px-3 rounded-[14px] bg-[var(--acc)] flex items-center font-semibold text-[11px] leading-none text-[var(--on-acc)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                    >
-                      + Bag
-                    </button>
+                    {p.tagOk ? (
+                      <button
+                        onClick={() => addToBag(p)}
+                        className="yc h-[28px] px-3 rounded-[14px] bg-[var(--acc)] flex items-center font-semibold text-[11px] leading-none text-[var(--on-acc)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                      >
+                        + Bag
+                      </button>
+                    ) : (
+                      <button
+                        disabled={true}
+                        className="yc h-[28px] px-3 rounded-[14px] bg-[var(--s2)] flex items-center font-medium text-[10px] leading-none text-[var(--t3)] cursor-not-allowed shadow-none"
+                      >
+                        Sold Out
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

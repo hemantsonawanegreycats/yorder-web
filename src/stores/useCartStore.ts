@@ -162,6 +162,24 @@ export const useCartStore = create<CartState>()(
           variantId = matching?.id || product.variableProducts[0]?.id;
         }
 
+        // Out of stock guard
+        const variantObj = variantId && product.variableProducts?.length
+          ? product.variableProducts.find((v: any) => v.id === variantId)
+          : undefined;
+
+        const isVariantOut = variantObj
+          ? (typeof variantObj.availableQty === 'number'
+              ? variantObj.availableQty <= 0
+              : typeof variantObj.availableQuantity === 'number'
+              ? variantObj.availableQuantity <= 0
+              : !product.tagOk)
+          : !product.tagOk;
+
+        if (product.isVendorManageInventory !== false && isVariantOut) {
+          useAppStore.getState().showToast('This item is currently out of stock.');
+          return;
+        }
+
         // 2. Check if item already exists in bag
         const existingIdx = state.bag.findIndex(
           (b) =>

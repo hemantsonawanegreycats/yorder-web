@@ -39,6 +39,8 @@ export interface Product {
   vendorName?: string;
   rating?: number;
   variableProducts?: any[];
+  availableQuantity?: number;
+  isVendorManageInventory?: boolean;
 }
 
 export interface Category {
