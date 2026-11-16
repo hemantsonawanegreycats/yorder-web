@@ -5,8 +5,9 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useCartStore } from '../stores/useCartStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useProductsQuery, useProductByIdQuery } from '../api/products.api';
-import { useVendorsQuery } from '../api/vendors.api';
+import { useVendorsQuery, useVendorByIdQuery } from '../api/vendors.api';
 import { rupee } from '../utils/formatters';
+import { isProductOutOfStock } from '../utils/productUtils';
 import { SEO } from '../components/common/SEO';
 import { ProductDetailSkeleton, ErrorState } from '../components/common/Skeleton';
 
@@ -29,6 +30,12 @@ export const ProductDetailPage: React.FC = () => {
   const product =
     fetchedProduct ||
     (allProducts || []).find((p) => String(p.id) === String(effectivePid));
+
+  // If the product's showroom isn't in the paged vendor list, fetch it directly
+  const sidInList = !!(product?.sid && stores && stores[product.sid]);
+  const { data: fetchedOwnStore } = useVendorByIdQuery(
+    product?.sid && stores && !sidInList ? product.sid : undefined
+  );
 
   // Auto-select the first in-stock variant when product loads (MUST be before any early returns to respect React Rules of Hooks)
   React.useEffect(() => {
@@ -77,7 +84,7 @@ export const ProductDetailPage: React.FC = () => {
     );
   }
 
-  const store = (stores && stores[product.sid]) || Object.values(stores || {})[0];
+  const store = (stores && stores[product.sid]) || fetchedOwnStore || undefined;
 
   const gallery = product.gal && product.gal.length > 0 ? product.gal : [product.img];
   const currentImage = gallery[activeGal] || gallery[0];
@@ -104,20 +111,17 @@ export const ProductDetailPage: React.FC = () => {
   const activeMrp = Number(activeVariant?.price ?? activeVariant?.sellPrice ?? product.mrp);
 
   const isVariantOutOfStock = (v: any): boolean => {
-    if (!v) return !product.tagOk;
-    const qty = v?.availableQty ?? v?.availableQuantity;
-    if (qty !== undefined && qty !== null) {
-      return Number(qty) <= 0;
-    }
-    return !product.tagOk;
+    // Matches mobile app: stock is only enforced when the vendor manages inventory
+    if (!product.isVendorManageInventory) return false;
+    if (!v) return isProductOutOfStock(product);
+    return Number(v?.availableQty ?? v?.availableQuantity ?? 0) <= 0;
   };
 
   const isCurrentOutOfStock = activeVariant
     ? isVariantOutOfStock(activeVariant)
-    : (product.availableQuantity !== undefined && product.availableQuantity !== null
-      ? Number(product.availableQuantity) <= 0
-      : !product.tagOk);
+    : isProductOutOfStock(product);
 
+  // Only use the product's OWN showroom for open/closed status (never fall back to another store)
   const isStoreOpenNow = store ? store.isOpen !== false : true;
 
   const handleAddCurrent = () => {

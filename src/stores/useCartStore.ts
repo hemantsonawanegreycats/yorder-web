@@ -181,23 +181,22 @@ export const useCartStore = create<CartState>()(
           variantId = matching?.id || product.variableProducts[0]?.id;
         }
 
-        // Out of stock guard
+        // Out of stock guard (only enforced when the vendor manages inventory, matching the mobile app)
         const variantObj = variantId && product.variableProducts?.length
           ? product.variableProducts.find((v: any) => String(v.id) === String(variantId))
           : undefined;
 
-        if (variantObj) {
-          const qty = variantObj.availableQty ?? variantObj.availableQuantity;
-          if (qty !== undefined && qty !== null && Number(qty) <= 0) {
-            useAppStore.getState().showToast('This variant is currently out of stock.');
+        if (product.isVendorManageInventory) {
+          if (variantObj) {
+            const qty = variantObj.availableQty ?? variantObj.availableQuantity;
+            if (Number(qty ?? 0) <= 0) {
+              useAppStore.getState().showToast('This variant is currently out of stock.');
+              return;
+            }
+          } else if (Number(product.availableQuantity ?? 0) <= 0) {
+            useAppStore.getState().showToast('This item is currently out of stock.');
             return;
           }
-        } else if (product.availableQuantity !== undefined && product.availableQuantity !== null && Number(product.availableQuantity) <= 0) {
-          useAppStore.getState().showToast('This item is currently out of stock.');
-          return;
-        } else if (product.tagOk === false) {
-          useAppStore.getState().showToast('This item is currently out of stock.');
-          return;
         }
 
         // 2. Check if item already exists in bag

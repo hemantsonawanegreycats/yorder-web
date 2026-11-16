@@ -1,31 +1,25 @@
 import { Product, Store } from '../types';
 
 /**
- * Determine if a product is out of stock by inspecting tagOk,
- * variable products quantities, and availableQuantity.
+ * Determine if a product is out of stock.
+ * Mirrors the mobile app: stock is only enforced when the vendor manages inventory
+ * (`is_vendor_manage_inventory`). Otherwise the product is always purchasable.
  */
 export const isProductOutOfStock = (product: Product): boolean => {
-  if (product.tagOk === false) return true;
+  if (!product) return true;
+  if (!product.isVendorManageInventory) return false;
   if (Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
-    let anyQty = false;
-    const allOut = product.variableProducts.every((v) => {
+    return product.variableProducts.every((v) => {
       const q = v?.availableQty ?? v?.availableQuantity;
-      if (q !== undefined && q !== null) {
-        anyQty = true;
-        return Number(q) <= 0;
-      }
-      return false;
+      return Number(q ?? 0) <= 0;
     });
-    if (anyQty && allOut) return true;
   }
-  if (product.availableQuantity !== undefined && product.availableQuantity !== null) {
-    return Number(product.availableQuantity) <= 0;
-  }
-  return !product.tagOk;
+  return Number(product.availableQuantity ?? 0) <= 0;
 };
 
 /**
  * Get the maximum available stock quantity for a specific product / variant in the bag (capped at 10).
+ * Like the mobile app, stock limits only apply when the vendor manages inventory.
  */
 export const getMaxAvailableQuantity = (
   product?: Product | null,
@@ -33,6 +27,7 @@ export const getMaxAvailableQuantity = (
   size?: string
 ): number => {
   if (!product) return 10;
+  if (!product.isVendorManageInventory) return 10;
 
   if (Array.isArray(product.variableProducts) && product.variableProducts.length > 0) {
     let matchedVariant = variantId
@@ -51,19 +46,15 @@ export const getMaxAvailableQuantity = (
 
     if (matchedVariant) {
       const q = matchedVariant.availableQty ?? matchedVariant.availableQuantity;
-      if (q !== undefined && q !== null) {
-        return Math.max(0, Math.min(10, Number(q)));
-      }
+      return Math.max(0, Math.min(10, Number(q ?? 0)));
     }
   }
-
-  if (product.tagOk === false) return 0;
 
   if (product.availableQuantity !== undefined && product.availableQuantity !== null) {
     return Math.max(0, Math.min(10, Number(product.availableQuantity)));
   }
 
-  return product.tagOk ? 10 : 0;
+  return product.tagOk === false ? 0 : 10;
 };
 
 /**

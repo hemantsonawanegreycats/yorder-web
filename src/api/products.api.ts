@@ -115,7 +115,11 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
   let isOutOfStock = false;
   let totalStockCount = 0;
 
-  if (variableProducts.length > 0) {
+  // Match the mobile app: stock counts are only enforced when the vendor manages inventory.
+  // Vendors that don't manage inventory leave availableQuantity at 0, which must NOT be read as "sold out".
+  if (!isVendorManageInventory) {
+    isOutOfStock = false;
+  } else if (variableProducts.length > 0) {
     let allVariantsOut = true;
     let anyQtySpecified = false;
 

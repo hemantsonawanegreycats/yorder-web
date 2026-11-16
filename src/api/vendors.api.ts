@@ -76,7 +76,10 @@ export const mapBackendToStore = (bv: any): Store => {
   const repIni = rep.slice(0, 2).toUpperCase();
 
   const statusInfo = getStoreStatusDetails(bv.open_hours);
-  const isStoreActive = bv.isOnline !== false && statusInfo.isOpen;
+  // Match the mobile app: open/closed is derived ONLY from the vendor's open_hours schedule.
+  // `isOnline` reflects whether the vendor app is currently connected, not whether the showroom
+  // is open for orders, so it must not be used to mark a store as closed.
+  const isStoreActive = statusInfo.isOpen;
 
   const rawRating = bv.rating && Number(bv.rating) > 0 ? Number(bv.rating).toFixed(1) : 'New';
   const ratingCount = bv.rating_count ? Number(bv.rating_count) : undefined;
