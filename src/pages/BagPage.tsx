@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/useAppStore';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -13,6 +13,7 @@ import { openRazorpayCheckout } from '../utils/razorpay';
 import { useChatStore } from '../stores/useChatStore';
 import { AddressMapModal } from '../components/address/AddressMapModal';
 import { rupee } from '../utils/formatters';
+import { getMaxAvailableQuantity, isBagItemOutOfStock } from '../utils/productUtils';
 import { SEO } from '../components/common/SEO';
 import { BagItemSkeleton, Skeleton } from '../components/common/Skeleton';
 
@@ -68,14 +69,22 @@ export const BagPage: React.FC = () => {
     syncBackendCart().finally(() => setIsInitialSyncing(false));
   }, [syncBackendCart]);
 
-  // If any bag items don't have product details populated, fetch them directly by ID
+  const refreshedPidsRef = useRef<Set<string>>(new Set());
+
+  // Always refresh live product details (stock, variants, prices) for bag items from backend
   useEffect(() => {
-    const missingPids = bag.filter((b) => !b.product && b.pid).map((b) => b.pid);
-    if (missingPids.length > 0) {
-      Promise.all(missingPids.map((id) => fetchProductById(id))).then((fetched) => {
+    const pidsToFetch = Array.from(
+      new Set(
+        bag
+          .filter((b) => b.pid && (!b.product || !refreshedPidsRef.current.has(String(b.pid))))
+          .map((b) => String(b.pid))
+      )
+    );
+    if (pidsToFetch.length > 0) {
+      pidsToFetch.forEach((id) => refreshedPidsRef.current.add(id));
+      Promise.all(pidsToFetch.map((id) => fetchProductById(id))).then((fetched) => {
         useCartStore.setState((state) => ({
           bag: state.bag.map((b) => {
-            if (b.product) return b;
             const match = fetched.find((p) => p && String(p.id) === String(b.pid));
             return match ? { ...b, product: match } : b;
           }),
@@ -95,25 +104,68 @@ export const BagPage: React.FC = () => {
   const hasItems = bag.length > 0;
 
   const resolvedBagItems = bag.map((b, i) => {
-    const product = b.product || (allProducts || []).find((p) => String(p.id) === String(b.pid));
+    const liveFromCatalog = (allProducts || []).find((p) => String(p.id) === String(b.pid));
+    const product = b.product || liveFromCatalog;
     const variant =
       b.variantId && product?.variableProducts?.length
-        ? product.variableProducts.find((v: any) => v.id === b.variantId)
+        ? product.variableProducts.find((v: any) => String(v.id) === String(b.variantId))
         : null;
     const effectivePrice = Number(variant?.sellPrice ?? variant?.price ?? product?.price ?? 0);
     const effectiveMrp = Number(variant?.price ?? variant?.sellPrice ?? product?.mrp ?? effectivePrice);
+
+    const maxAvailableQty = getMaxAvailableQuantity(product, b.variantId, b.size);
+    const isOutOfStock = isBagItemOutOfStock(product, b.variantId, b.size);
+    const qty = b.quantity || 1;
+    const isInsufficientStock = !isOutOfStock && qty > maxAvailableQty;
+    const store = stores && product?.sid ? stores[String(product.sid)] : undefined;
+    const isStoreClosed = store ? store.isOpen === false : false;
 
     return {
       bagIndex: i,
       pid: b.pid,
       size: b.size,
-      quantity: b.quantity || 1,
+      quantity: qty,
       cartItemId: b.cartItemId,
       variantId: b.variantId,
       product: product ? { ...product, price: effectivePrice, mrp: effectiveMrp } : null,
       isResolving: !product,
+      maxAvailableQty,
+      isOutOfStock,
+      isInsufficientStock,
+      isStoreClosed,
     };
   });
+
+  const outOfStockItems = resolvedBagItems.filter((it) => !it.isResolving && it.isOutOfStock);
+  const insufficientStockItems = resolvedBagItems.filter((it) => !it.isResolving && it.isInsufficientStock);
+  const closedStoreItems = resolvedBagItems.filter((it) => !it.isResolving && it.isStoreClosed);
+  const hasBlockingIssues =
+    outOfStockItems.length > 0 || insufficientStockItems.length > 0 || closedStoreItems.length > 0;
+
+  const handleResolveBagIssues = async () => {
+    // Remove out-of-stock or closed-store items in reverse index order, and cap insufficient stock items
+    const indicesToRemove = resolvedBagItems
+      .filter((it) => it.isOutOfStock || it.isStoreClosed)
+      .map((it) => it.bagIndex)
+      .sort((a, b) => b - a);
+
+    for (const idx of indicesToRemove) {
+      await removeAt(idx);
+    }
+
+    // Re-evaluate remaining items for insufficient stock
+    const currentBag = useCartStore.getState().bag;
+    for (let idx = 0; idx < currentBag.length; idx++) {
+      const item = currentBag[idx];
+      const maxQty = getMaxAvailableQuantity(item.product, item.variantId, item.size);
+      const currentQty = item.quantity || 1;
+      if (maxQty > 0 && currentQty > maxQty) {
+        await updateQuantity(idx, maxQty - currentQty);
+      }
+    }
+
+    showToast('Updated bag to match live showroom availability');
+  };
 
   // Group items by showroom
   const groupedByStore = resolvedBagItems.reduce<Record<string, typeof resolvedBagItems>>((acc, item) => {
@@ -123,7 +175,10 @@ export const BagPage: React.FC = () => {
     return acc;
   }, {});
 
-  const subtotal = resolvedBagItems.reduce((acc, it) => acc + (it.product?.price || 0) * it.quantity, 0);
+  const subtotal = resolvedBagItems.reduce(
+    (acc, it) => (it.isOutOfStock ? acc : acc + (it.product?.price || 0) * it.quantity),
+    0
+  );
   const deliveryFee = hasItems ? Object.keys(groupedByStore).length * 10 : 0;
   const couponDiscount = appliedCoupon?.discount || 0;
   const totalPayable = Math.max(0, subtotal + deliveryFee - couponDiscount);
@@ -172,6 +227,19 @@ export const BagPage: React.FC = () => {
 
   const handleProceedToOrder = async () => {
     if (!hasItems) return;
+
+    if (outOfStockItems.length > 0) {
+      showToast('Please remove out-of-stock items from your bag before ordering');
+      return;
+    }
+    if (insufficientStockItems.length > 0) {
+      showToast('Some items exceed available shelf stock. Please reduce their quantity.');
+      return;
+    }
+    if (closedStoreItems.length > 0) {
+      showToast('One or more showrooms in your bag are currently closed.');
+      return;
+    }
 
     if (!isAuthenticated) {
       setAuthModalOpen(true);
@@ -335,10 +403,13 @@ export const BagPage: React.FC = () => {
           <div className="mt-8 flex flex-col gap-6">
             {Object.entries(groupedByStore).map(([storeId, items]) => {
               const store = stores ? stores[storeId] : undefined;
+              const isStoreClosed = store ? store.isOpen === false : false;
               return (
                 <div
                   key={storeId}
-                  className="rounded-[20px] bg-[var(--s1)] border border-[var(--bd)] overflow-hidden"
+                  className={`rounded-[20px] bg-[var(--s1)] border overflow-hidden transition-colors ${
+                    isStoreClosed ? 'border-amber-500/35' : 'border-[var(--bd)]'
+                  }`}
                 >
                   {/* Store Header */}
                   <div className="flex items-center justify-between p-4 bg-[var(--s2)]/40 border-b border-[var(--bd)]">
@@ -351,18 +422,41 @@ export const BagPage: React.FC = () => {
                         )}
                       </div>
                       <div>
-                        <div className="font-semibold text-xs text-[var(--t1)]">
-                          {store?.name || items.find((it) => it.product)?.product?.brand || 'Verified Showroom'}
+                        <div className="font-semibold text-xs text-[var(--t1)] flex items-center gap-2">
+                          <span>
+                            {store?.name || items.find((it) => it.product)?.product?.brand || 'Verified Showroom'}
+                          </span>
+                          <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full ${
+                              isStoreClosed ? 'bg-neutral-500' : 'bg-[var(--ok)]'
+                            }`}
+                          />
                         </div>
                         <div className="text-[10px] text-[var(--t3)]">
                           {store?.addr || 'Showroom Floor · Immediate Dispatch'}
                         </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-semibold text-[var(--ok)]">
-                      {store?.eta || 'Arrives in 45 min'}
-                    </span>
+                    {isStoreClosed ? (
+                      <span className="px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-[10px] font-semibold text-neutral-300">
+                        ○ Store Closed · {store?.hours || 'Closed now'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-[var(--ok)]">
+                        {store?.eta || 'Arrives in 45 min'}
+                      </span>
+                    )}
                   </div>
+
+                  {/* Closed Showroom Notice Banner */}
+                  {isStoreClosed && (
+                    <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="text-[11px] text-amber-200/90 leading-relaxed">
+                        <span className="font-semibold text-amber-300">Showroom currently closed:</span>{' '}
+                        {store?.name || 'This showroom'} is outside operating hours ({store?.hours || 'Closed'}). Remove its items to check out other showrooms now, or order when doors open.
+                      </div>
+                    </div>
+                  )}
 
                   {/* Items in this Store */}
                   <div className="p-4 flex flex-col gap-3">
@@ -372,36 +466,73 @@ export const BagPage: React.FC = () => {
                       }
 
                       const prod = item.product;
+                      const isAtMaxStock = item.quantity >= item.maxAvailableQty;
                       return (
                         <div
                           key={`${prod.id}-${item.bagIndex}`}
-                          className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 rounded-[14px] bg-[var(--s0)] border border-[var(--bd)]"
+                          className={`flex flex-col sm:flex-row sm:items-center gap-4 p-3 rounded-[14px] bg-[var(--s0)] border transition-colors ${
+                            item.isOutOfStock
+                              ? 'border-red-500/40 bg-red-500/[0.04]'
+                              : item.isInsufficientStock
+                              ? 'border-amber-500/40 bg-amber-500/[0.04]'
+                              : 'border-[var(--bd)]'
+                          }`}
                         >
                           <div
                             onClick={() => handleOpenProduct(prod.id)}
-                            className="w-[74px] h-[74px] rounded-[12px] overflow-hidden bg-white flex-shrink-0 cursor-pointer border border-[var(--bd)] p-1 flex items-center justify-center"
+                            className="relative w-[74px] h-[74px] rounded-[12px] overflow-hidden bg-white flex-shrink-0 cursor-pointer border border-[var(--bd)] p-1 flex items-center justify-center"
                           >
                             <img
                               src={prod.img}
                               alt={prod.name}
-                              className="w-full h-full object-contain"
+                              className={`w-full h-full object-contain ${
+                                item.isOutOfStock ? 'opacity-50 grayscale' : ''
+                              }`}
                             />
+                            {item.isOutOfStock && (
+                              <span className="absolute inset-x-1 bottom-1 py-0.5 rounded bg-red-600/95 text-[8px] font-bold text-white text-center uppercase tracking-wider">
+                                Sold Out
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <button
                               onClick={() => handleOpenProduct(prod.id)}
-                              className="font-medium text-[13.5px] leading-[1.4] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
+                              className={`font-medium text-[13.5px] leading-[1.4] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors ${
+                                item.isOutOfStock ? 'text-[var(--t3)] line-through' : 'text-[var(--t1)]'
+                              }`}
                             >
                               {prod.name}
                             </button>
-                            <div className="text-[11px] text-[var(--t3)] mt-1.5 flex items-center gap-2">
+                            <div className="text-[11px] text-[var(--t3)] mt-1.5 flex flex-wrap items-center gap-2">
                               <span>Size: {item.size || 'Standard'}</span>
                               <span>·</span>
-                              <span className="text-[var(--gold)] font-medium">{prod.stock}</span>
+                              {item.isOutOfStock ? (
+                                <span className="text-red-400 font-semibold">
+                                  Out of stock on shelf — Remove to proceed
+                                </span>
+                              ) : item.isInsufficientStock ? (
+                                <span className="text-amber-400 font-semibold">
+                                  Only {item.maxAvailableQty} left in stock — Reduce quantity
+                                </span>
+                              ) : isStoreClosed ? (
+                                <span className="text-neutral-400 font-medium">
+                                  Showroom closed ({store?.hours || 'Closed'})
+                                </span>
+                              ) : (
+                                <span className="text-[var(--gold)] font-medium">{prod.stock}</span>
+                              )}
                             </div>
-                            <div className="font-semibold text-[14px] text-[var(--t1)] mt-2">
-                              {rupee(prod.price)}
+                            <div className="font-semibold text-[14px] text-[var(--t1)] mt-2 flex items-center gap-2">
+                              <span className={item.isOutOfStock ? 'text-[var(--t3)] line-through' : ''}>
+                                {rupee(prod.price)}
+                              </span>
+                              {item.isOutOfStock && (
+                                <span className="text-[10px] font-normal text-red-400">
+                                  (Excluded from bill)
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -419,9 +550,20 @@ export const BagPage: React.FC = () => {
                                 {item.quantity}
                               </span>
                               <button
+                                disabled={item.isOutOfStock || isAtMaxStock}
                                 onClick={() => updateQuantity(item.bagIndex, 1)}
-                                className="w-6 h-6 flex items-center justify-center text-[var(--t2)] hover:text-white font-bold"
-                                title="Increase"
+                                className={`w-6 h-6 flex items-center justify-center font-bold transition-opacity ${
+                                  item.isOutOfStock || isAtMaxStock
+                                    ? 'text-[var(--t4)] opacity-40 cursor-not-allowed'
+                                    : 'text-[var(--t2)] hover:text-white'
+                                }`}
+                                title={
+                                  item.isOutOfStock
+                                    ? 'Out of stock'
+                                    : isAtMaxStock
+                                    ? `Maximum available stock (${item.maxAvailableQty}) reached`
+                                    : 'Increase'
+                                }
                               >
                                 +
                               </button>
@@ -612,19 +754,64 @@ export const BagPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Availability / Closed Store Blocker Notice */}
+        {hasItems && hasBlockingIssues && (
+          <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 flex flex-col gap-2.5">
+            <div className="font-semibold text-xs text-red-400">
+              {outOfStockItems.length > 0
+                ? `${outOfStockItems.length} ${outOfStockItems.length === 1 ? 'item is' : 'items are'} now out of stock`
+                : insufficientStockItems.length > 0
+                ? 'Quantity exceeds live showroom stock'
+                : 'Showroom currently closed for dispatch'}
+            </div>
+            <div className="text-[11px] text-[var(--t2)] leading-relaxed">
+              {outOfStockItems.length > 0
+                ? 'One or more items in your bag were sold out on the showroom floor. Remove them to proceed with your order.'
+                : insufficientStockItems.length > 0
+                ? 'Please reduce item quantities to match available showroom inventory.'
+                : 'One or more showrooms in your bag are outside operating hours. Remove closed showroom items to order from open showrooms now, or come back when they open.'}
+            </div>
+            <button
+              type="button"
+              onClick={handleResolveBagIssues}
+              className="self-start px-3.5 py-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-[11px] font-semibold text-red-300 transition-colors"
+            >
+              {insufficientStockItems.length > 0 && outOfStockItems.length === 0 && closedStoreItems.length === 0
+                ? 'Adjust quantities automatically'
+                : 'Remove unavailable items'}
+            </button>
+          </div>
+        )}
+
         {/* Place Order CTA */}
         <button
-          disabled={!hasItems || isSubmittingOrder}
+          disabled={!hasItems || isSubmittingOrder || hasBlockingIssues}
           onClick={handleProceedToOrder}
           className="w-full h-[50px] rounded-[25px] flex items-center justify-center font-semibold text-[13px] transition-all shadow-md active:scale-98"
           style={{
-            background: hasItems && !isSubmittingOrder ? (isAuthenticated ? 'var(--acc)' : 'var(--gold)') : 'var(--s2)',
-            color: hasItems && !isSubmittingOrder ? (isAuthenticated ? 'var(--on-acc)' : '#0B0B0C') : 'var(--t3)',
-            cursor: hasItems && !isSubmittingOrder ? 'pointer' : 'not-allowed',
+            background:
+              hasItems && !isSubmittingOrder && !hasBlockingIssues
+                ? isAuthenticated
+                  ? 'var(--acc)'
+                  : 'var(--gold)'
+                : 'var(--s2)',
+            color:
+              hasItems && !isSubmittingOrder && !hasBlockingIssues
+                ? isAuthenticated
+                  ? 'var(--on-acc)'
+                  : '#0B0B0C'
+                : 'var(--t3)',
+            cursor: hasItems && !isSubmittingOrder && !hasBlockingIssues ? 'pointer' : 'not-allowed',
           }}
         >
           {isSubmittingOrder
             ? 'Dispatching order to showroom...'
+            : outOfStockItems.length > 0
+            ? 'Remove Out-of-Stock Items to Order'
+            : insufficientStockItems.length > 0
+            ? 'Adjust Item Quantities to Order'
+            : closedStoreItems.length > 0
+            ? 'Showroom Currently Closed'
             : !isAuthenticated
             ? 'Log in with Mobile to Order'
             : paymentMethod === 'cod'

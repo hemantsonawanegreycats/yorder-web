@@ -252,6 +252,10 @@ export const ProductDetailPage: React.FC = () => {
                     <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#EF4444] border border-[#EF4444]/30 shadow-sm">
                       ○ CURRENTLY OUT OF STOCK
                     </div>
+                  ) : !isStoreOpenNow ? (
+                    <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-neutral-300 border border-neutral-600/40 shadow-sm uppercase">
+                      ○ STORE CLOSED · {store?.hours || 'CLOSED'}
+                    </div>
                   ) : (
                     <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#9BD8A0] border border-white/10 shadow-sm">
                       ● ON THE SHELF NOW

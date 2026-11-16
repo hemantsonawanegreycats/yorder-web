@@ -6,6 +6,7 @@ import { useAuthStore } from './useAuthStore';
 import { fetchCart, ensureCart, BackendCart } from '../api/cart.api';
 import { mapBackendToProduct } from '../api/products.api';
 import { apiClient } from '../api/client';
+import { getMaxAvailableQuantity } from '../utils/productUtils';
 
 export interface AppliedCoupon {
   code: string;
@@ -86,6 +87,24 @@ export const useCartStore = create<CartState>()(
         if (newQty <= 0) {
           get().removeAt(index);
           return;
+        }
+
+        if (delta > 0 && currentItem.product) {
+          const maxAvail = getMaxAvailableQuantity(
+            currentItem.product,
+            currentItem.variantId,
+            currentItem.size
+          );
+          if (maxAvail <= 0) {
+            useAppStore.getState().showToast('This item is currently out of stock');
+            return;
+          }
+          if (newQty > maxAvail) {
+            useAppStore
+              .getState()
+              .showToast(`Only ${maxAvail} ${maxAvail === 1 ? 'unit' : 'units'} available on shelf`);
+            return;
+          }
         }
 
         if (newQty > 10) {
@@ -189,8 +208,12 @@ export const useCartStore = create<CartState>()(
         );
 
         if (existingIdx >= 0) {
+          const prevQty = get().bag[existingIdx]?.quantity || 1;
           await get().updateQuantity(existingIdx, 1);
-          useAppStore.getState().showToast(`Added another ${product.name} to bag`);
+          const afterQty = get().bag[existingIdx]?.quantity || 1;
+          if (afterQty > prevQty) {
+            useAppStore.getState().showToast(`Added another ${product.name} to bag`);
+          }
           return;
         }
 

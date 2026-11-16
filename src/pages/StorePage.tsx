@@ -8,6 +8,7 @@ import { useVendorsQuery, useVendorByIdQuery, useToggleFollowMutation, useGetVen
 import { useProductsQuery } from '../api/products.api';
 import { useAddressesQuery } from '../api/address.api';
 import { rupee } from '../utils/formatters';
+import { isProductOutOfStock } from '../utils/productUtils';
 import { SEO } from '../components/common/SEO';
 import { ProductCardSkeleton, StoreHeaderSkeleton, ErrorState } from '../components/common/Skeleton';
 import { Store } from '../types';
@@ -401,79 +402,83 @@ export const StorePage: React.FC = () => {
 
           {shelfProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {shelfProducts.map((p) => (
-                <div key={p.id} className="flex flex-col group text-left">
-                  <div
-                    onClick={() => handleOpenProduct(p.id)}
-                    className="yc relative aspect-square max-h-[195px] rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors cursor-pointer flex items-center justify-center p-2.5"
-                  >
-                    <img
-                      src={p.img}
-                      alt={p.name}
-                      className={`max-h-full max-w-full object-contain group-hover:scale-105 transition-all duration-300 ${
-                        !p.tagOk ? 'opacity-65 grayscale-[25%]' : ''
-                      }`}
-                    />
-                    {/* Stock Tag Badge */}
+              {shelfProducts.map((p) => {
+                const isOut = isProductOutOfStock(p);
+                const hasMultiVariants = Array.isArray(p.variableProducts) && p.variableProducts.length > 1;
+                return (
+                  <div key={p.id} className="flex flex-col group text-left">
                     <div
-                      className="absolute left-[8px] top-[8px] px-[8px] py-[4px] rounded-[9px] font-medium text-[8.5px] leading-none backdrop-blur-[8px] shadow-sm flex items-center gap-1"
-                      style={{
-                        background: 'rgba(11,11,12,.85)',
-                        color: !p.tagOk ? '#EF4444' : currentStore.isOpen === false ? '#A3A3A3' : '#9BD8A0',
-                      }}
+                      onClick={() => handleOpenProduct(p.id)}
+                      className="yc relative aspect-square max-h-[195px] rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors cursor-pointer flex items-center justify-center p-2.5"
                     >
-                      {!p.tagOk ? (
-                        'Out of stock'
+                      <img
+                        src={p.img}
+                        alt={p.name}
+                        className={`max-h-full max-w-full object-contain group-hover:scale-105 transition-all duration-300 ${
+                          isOut ? 'opacity-65 grayscale-[25%]' : ''
+                        }`}
+                      />
+                      {/* Stock Tag Badge */}
+                      <div
+                        className="absolute left-[8px] top-[8px] px-[8px] py-[4px] rounded-[9px] font-medium text-[8.5px] leading-none backdrop-blur-[8px] shadow-sm flex items-center gap-1"
+                        style={{
+                          background: 'rgba(11,11,12,.85)',
+                          color: isOut ? '#EF4444' : currentStore.isOpen === false ? '#A3A3A3' : '#9BD8A0',
+                        }}
+                      >
+                        {isOut ? (
+                          'Out of stock'
+                        ) : currentStore.isOpen === false ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                            Store Closed
+                          </>
+                        ) : (
+                          p.stock
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-[9.5px] text-[var(--t3)] mt-[10px] mb-[4px]">
+                      {p.brand}
+                    </div>
+                    <button
+                      onClick={() => handleOpenProduct(p.id)}
+                      className="yc font-medium text-[12px] leading-[1.35] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
+                    >
+                      {p.name}
+                    </button>
+
+                    <div className="flex items-center justify-between mt-[10px]">
+                      <span className="font-semibold text-[13.5px] leading-none text-[var(--t1)]">
+                        {rupee(p.price)}
+                      </span>
+                      {isOut ? (
+                        <button
+                          disabled={true}
+                          className="yc h-[28px] px-3 rounded-[14px] bg-[var(--s2)] flex items-center font-medium text-[10px] leading-none text-[var(--t3)] cursor-not-allowed shadow-none"
+                        >
+                          Sold Out
+                        </button>
                       ) : currentStore.isOpen === false ? (
-                        <>
-                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
-                          Store Closed
-                        </>
+                        <button
+                          disabled={true}
+                          className="yc h-[28px] px-3 rounded-[14px] bg-[var(--s2)] flex items-center font-medium text-[10px] leading-none text-neutral-400 cursor-not-allowed shadow-none border border-neutral-700/50"
+                        >
+                          Closed
+                        </button>
                       ) : (
-                        p.stock
+                        <button
+                          onClick={() => (hasMultiVariants ? handleOpenProduct(p.id) : addToBag(p))}
+                          className="yc h-[28px] px-3 rounded-[14px] bg-[var(--acc)] flex items-center font-semibold text-[11px] leading-none text-[var(--on-acc)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                        >
+                          {hasMultiVariants ? 'Options' : '+ Bag'}
+                        </button>
                       )}
                     </div>
                   </div>
-
-                  <div className="text-[9.5px] text-[var(--t3)] mt-[10px] mb-[4px]">
-                    {p.brand}
-                  </div>
-                  <button
-                    onClick={() => handleOpenProduct(p.id)}
-                    className="yc font-medium text-[12px] leading-[1.35] text-[var(--t1)] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors"
-                  >
-                    {p.name}
-                  </button>
-
-                  <div className="flex items-center justify-between mt-[10px]">
-                    <span className="font-semibold text-[13.5px] leading-none text-[var(--t1)]">
-                      {rupee(p.price)}
-                    </span>
-                    {!p.tagOk ? (
-                      <button
-                        disabled={true}
-                        className="yc h-[28px] px-3 rounded-[14px] bg-[var(--s2)] flex items-center font-medium text-[10px] leading-none text-[var(--t3)] cursor-not-allowed shadow-none"
-                      >
-                        Sold Out
-                      </button>
-                    ) : currentStore.isOpen === false ? (
-                      <button
-                        disabled={true}
-                        className="yc h-[28px] px-3 rounded-[14px] bg-[var(--s2)] flex items-center font-medium text-[10px] leading-none text-neutral-400 cursor-not-allowed shadow-none border border-neutral-700/50"
-                      >
-                        Closed
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => addToBag(p)}
-                        className="yc h-[28px] px-3 rounded-[14px] bg-[var(--acc)] flex items-center font-semibold text-[11px] leading-none text-[var(--on-acc)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                      >
-                        + Bag
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             productsLoading ? (
