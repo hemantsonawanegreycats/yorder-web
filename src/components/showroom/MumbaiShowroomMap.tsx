@@ -289,7 +289,7 @@ export const MumbaiShowroomMap: React.FC<MumbaiShowroomMapProps> = ({ stores, on
 
   return (
     <div
-      className={`relative w-full h-full min-h-[360px] md:min-h-[420px] bg-[#0E0E10] overflow-hidden select-none ${
+      className={`relative w-full h-full min-h-[300px] sm:min-h-[360px] md:min-h-[420px] bg-[#0E0E10] overflow-hidden select-none ${
         isDark ? 'mumbai-dark-mode' : ''
       }`}
       style={{
@@ -329,16 +329,16 @@ export const MumbaiShowroomMap: React.FC<MumbaiShowroomMapProps> = ({ stores, on
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0B0B0C]/80 via-transparent to-[#0B0B0C]/40 z-10" />
 
       {/* Top Left: Mumbai Area Badge */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141416]/90 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
-        <MapPin className="w-3.5 h-3.5 text-[#F5C451]" />
-        <span className="text-[11px] font-medium text-white/90">
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 max-w-[calc(100%-64px)] z-20 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#141416]/90 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
+        <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#F5C451] flex-shrink-0" />
+        <span className="text-[10px] sm:text-[11px] font-medium text-white/90 truncate">
           MUMBAI · Bandra West & Khar
         </span>
-        <span className="w-1.5 h-1.5 rounded-full bg-[#4FB44D] animate-pulse ml-0.5" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[#4FB44D] animate-pulse ml-0.5 flex-shrink-0" />
       </div>
 
       {/* Top Right: Custom Zoom & Recenter Controls */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col gap-1.5 pointer-events-auto">
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col gap-1.5 pointer-events-auto">
         <button
           onClick={handleZoomIn}
           aria-label="Zoom in"
@@ -364,7 +364,7 @@ export const MumbaiShowroomMap: React.FC<MumbaiShowroomMapProps> = ({ stores, on
       </div>
 
       {/* Bottom Left: Linking Road Cluster Floating Card */}
-      <div className="absolute left-4 bottom-4 z-20 p-3.5 rounded-xl bg-[#141416]/90 backdrop-blur-md border border-white/10 shadow-xl pointer-events-auto max-w-[280px]">
+      <div className="absolute left-3 right-3 sm:right-auto sm:left-4 bottom-3 sm:bottom-4 z-20 p-2.5 sm:p-3.5 rounded-xl bg-[#141416]/90 backdrop-blur-md border border-white/10 shadow-xl pointer-events-auto max-w-none sm:max-w-[280px]">
         <div className="flex items-center gap-1.5 font-medium text-[9px] leading-none tracking-[0.16em] text-[#F5C451]">
           <span>LINKING ROAD CLUSTER</span>
           <span className="text-[9px] text-[#4FB44D]">● LIVE</span>

@@ -378,16 +378,16 @@ export const BagPage: React.FC = () => {
       />
 
       {/* Left Column: Bag Items List */}
-      <div className="p-6 md:p-[36px_34px_44px]">
+      <div className="p-4 sm:p-6 md:p-[36px_34px_44px] min-w-0">
         <div className="font-medium text-[9px] leading-none tracking-[0.18em] text-[var(--gold)]">
           TRY AT YOUR DOOR
         </div>
-        <h1 className="font-light text-[32px] md:text-[42px] leading-[1.1] tracking-[-0.04em] text-[var(--t1)] mt-4">
+        <h1 className="font-light text-[24px] sm:text-[32px] md:text-[42px] leading-[1.15] sm:leading-[1.1] tracking-[-0.04em] text-[var(--t1)] mt-3 sm:mt-4">
           {hasItems
             ? `${totalQuantity} ${totalQuantity === 1 ? 'item' : 'items'} coming. Keep what fits.`
             : 'Your bag is empty.'}
         </h1>
-        <p className="font-normal text-[13px] leading-[1.7] text-[var(--t3)] mt-4 max-w-[60ch]">
+        <p className="font-normal text-[12px] sm:text-[13px] leading-[1.7] text-[var(--t3)] mt-3 sm:mt-4 max-w-[60ch]">
           {hasItems
             ? 'The showroom packs your order directly. The rider waits ten minutes at your door while you try everything on.'
             : 'Explore nearby verified showrooms to add clothes, shoes, and lifestyle goods to your trial bag.'}
@@ -395,54 +395,54 @@ export const BagPage: React.FC = () => {
 
         {/* Grouped Showroom Shelves */}
         {isInitialSyncing ? (
-          <div className="mt-8 flex flex-col gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col gap-4">
             <BagItemSkeleton />
             <BagItemSkeleton />
           </div>
         ) : hasItems ? (
-          <div className="mt-8 flex flex-col gap-6">
+          <div className="mt-6 sm:mt-8 flex flex-col gap-5 sm:gap-6">
             {Object.entries(groupedByStore).map(([storeId, items]) => {
               const store = stores ? stores[storeId] : undefined;
               const isStoreClosed = store ? store.isOpen === false : false;
               return (
                 <div
                   key={storeId}
-                  className={`rounded-[20px] bg-[var(--s1)] border overflow-hidden transition-colors ${
+                  className={`rounded-[18px] sm:rounded-[20px] bg-[var(--s1)] border overflow-hidden transition-colors ${
                     isStoreClosed ? 'border-amber-500/35' : 'border-[var(--bd)]'
                   }`}
                 >
                   {/* Store Header */}
-                  <div className="flex items-center justify-between p-4 bg-[var(--s2)]/40 border-b border-[var(--bd)]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[var(--s3)] flex items-center justify-center font-bold text-xs text-[var(--gold)] overflow-hidden">
+                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 p-3 sm:p-4 bg-[var(--s2)]/40 border-b border-[var(--bd)]">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-full bg-[var(--s3)] flex items-center justify-center font-bold text-xs text-[var(--gold)] overflow-hidden flex-shrink-0">
                         {store?.img ? (
                           <img src={store.img} alt={store.name} className="w-full h-full object-cover" />
                         ) : (
                           store?.ini || 'SH'
                         )}
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="font-semibold text-xs text-[var(--t1)] flex items-center gap-2">
-                          <span>
+                          <span className="truncate">
                             {store?.name || items.find((it) => it.product)?.product?.brand || 'Verified Showroom'}
                           </span>
                           <span
-                            className={`inline-block w-1.5 h-1.5 rounded-full ${
+                            className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                               isStoreClosed ? 'bg-neutral-500' : 'bg-[var(--ok)]'
                             }`}
                           />
                         </div>
-                        <div className="text-[10px] text-[var(--t3)]">
+                        <div className="text-[10px] text-[var(--t3)] truncate">
                           {store?.addr || 'Showroom Floor · Immediate Dispatch'}
                         </div>
                       </div>
                     </div>
                     {isStoreClosed ? (
-                      <span className="px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-[10px] font-semibold text-neutral-300">
+                      <span className="shrink-0 px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-[10px] font-semibold text-neutral-300">
                         ○ Store Closed · {store?.hours || 'Closed now'}
                       </span>
                     ) : (
-                      <span className="text-[10px] font-semibold text-[var(--ok)]">
+                      <span className="shrink-0 text-[10px] font-semibold text-[var(--ok)]">
                         {store?.eta || 'Arrives in 45 min'}
                       </span>
                     )}
@@ -450,7 +450,7 @@ export const BagPage: React.FC = () => {
 
                   {/* Closed Showroom Notice Banner */}
                   {isStoreClosed && (
-                    <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="px-3 sm:px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="text-[11px] text-amber-200/90 leading-relaxed">
                         <span className="font-semibold text-amber-300">Showroom currently closed:</span>{' '}
                         {store?.name || 'This showroom'} is outside operating hours ({store?.hours || 'Closed'}). Remove its items to check out other showrooms now, or order when doors open.
@@ -459,7 +459,7 @@ export const BagPage: React.FC = () => {
                   )}
 
                   {/* Items in this Store */}
-                  <div className="p-4 flex flex-col gap-3">
+                  <div className="p-3 sm:p-4 flex flex-col gap-3">
                     {items.map((item) => {
                       if (item.isResolving || !item.product) {
                         return <BagItemSkeleton key={`resolving-${item.bagIndex}`} />;
@@ -470,7 +470,7 @@ export const BagPage: React.FC = () => {
                       return (
                         <div
                           key={`${prod.id}-${item.bagIndex}`}
-                          className={`flex flex-col sm:flex-row sm:items-center gap-4 p-3 rounded-[14px] bg-[var(--s0)] border transition-colors ${
+                          className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 rounded-[14px] bg-[var(--s0)] border transition-colors ${
                             item.isOutOfStock
                               ? 'border-red-500/40 bg-red-500/[0.04]'
                               : item.isInsufficientStock
@@ -478,66 +478,68 @@ export const BagPage: React.FC = () => {
                               : 'border-[var(--bd)]'
                           }`}
                         >
-                          <div
-                            onClick={() => handleOpenProduct(prod.id)}
-                            className="relative w-[74px] h-[74px] rounded-[12px] overflow-hidden bg-white flex-shrink-0 cursor-pointer border border-[var(--bd)] p-1 flex items-center justify-center"
-                          >
-                            <img
-                              src={prod.img}
-                              alt={prod.name}
-                              className={`w-full h-full object-contain ${
-                                item.isOutOfStock ? 'opacity-50 grayscale' : ''
-                              }`}
-                            />
-                            {item.isOutOfStock && (
-                              <span className="absolute inset-x-1 bottom-1 py-0.5 rounded bg-red-600/95 text-[8px] font-bold text-white text-center uppercase tracking-wider">
-                                Sold Out
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <button
+                          <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                            <div
                               onClick={() => handleOpenProduct(prod.id)}
-                              className={`font-medium text-[13.5px] leading-[1.4] hover:text-[var(--gold)] text-left line-clamp-1 transition-colors ${
-                                item.isOutOfStock ? 'text-[var(--t3)] line-through' : 'text-[var(--t1)]'
-                              }`}
+                              className="relative w-[64px] h-[64px] sm:w-[74px] sm:h-[74px] rounded-[12px] overflow-hidden bg-white flex-shrink-0 cursor-pointer border border-[var(--bd)] p-1 flex items-center justify-center"
                             >
-                              {prod.name}
-                            </button>
-                            <div className="text-[11px] text-[var(--t3)] mt-1.5 flex flex-wrap items-center gap-2">
-                              <span>Size: {item.size || 'Standard'}</span>
-                              <span>·</span>
-                              {item.isOutOfStock ? (
-                                <span className="text-red-400 font-semibold">
-                                  Out of stock on shelf — Remove to proceed
+                              <img
+                                src={prod.img}
+                                alt={prod.name}
+                                className={`w-full h-full object-contain ${
+                                  item.isOutOfStock ? 'opacity-50 grayscale' : ''
+                                }`}
+                              />
+                              {item.isOutOfStock && (
+                                <span className="absolute inset-x-1 bottom-1 py-0.5 rounded bg-red-600/95 text-[7.5px] font-bold text-white text-center uppercase tracking-wider">
+                                  Sold Out
                                 </span>
-                              ) : item.isInsufficientStock ? (
-                                <span className="text-amber-400 font-semibold">
-                                  Only {item.maxAvailableQty} left in stock — Reduce quantity
-                                </span>
-                              ) : isStoreClosed ? (
-                                <span className="text-neutral-400 font-medium">
-                                  Showroom closed ({store?.hours || 'Closed'})
-                                </span>
-                              ) : (
-                                <span className="text-[var(--gold)] font-medium">{prod.stock}</span>
                               )}
                             </div>
-                            <div className="font-semibold text-[14px] text-[var(--t1)] mt-2 flex items-center gap-2">
-                              <span className={item.isOutOfStock ? 'text-[var(--t3)] line-through' : ''}>
-                                {rupee(prod.price)}
-                              </span>
-                              {item.isOutOfStock && (
-                                <span className="text-[10px] font-normal text-red-400">
-                                  (Excluded from bill)
+
+                            <div className="flex-1 min-w-0">
+                              <button
+                                onClick={() => handleOpenProduct(prod.id)}
+                                className={`font-medium text-[13px] sm:text-[13.5px] leading-[1.4] hover:text-[var(--gold)] text-left line-clamp-2 sm:line-clamp-1 transition-colors ${
+                                  item.isOutOfStock ? 'text-[var(--t3)] line-through' : 'text-[var(--t1)]'
+                                }`}
+                              >
+                                {prod.name}
+                              </button>
+                              <div className="text-[10.5px] sm:text-[11px] text-[var(--t3)] mt-1 sm:mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                <span>Size: {item.size || 'Standard'}</span>
+                                <span>·</span>
+                                {item.isOutOfStock ? (
+                                  <span className="text-red-400 font-semibold">
+                                    Out of stock on shelf — Remove to proceed
+                                  </span>
+                                ) : item.isInsufficientStock ? (
+                                  <span className="text-amber-400 font-semibold">
+                                    Only {item.maxAvailableQty} left in stock — Reduce quantity
+                                  </span>
+                                ) : isStoreClosed ? (
+                                  <span className="text-neutral-400 font-medium">
+                                    Showroom closed ({store?.hours || 'Closed'})
+                                  </span>
+                                ) : (
+                                  <span className="text-[var(--gold)] font-medium">{prod.stock}</span>
+                                )}
+                              </div>
+                              <div className="font-semibold text-[13.5px] sm:text-[14px] text-[var(--t1)] mt-1.5 sm:mt-2 flex flex-wrap items-center gap-2">
+                                <span className={item.isOutOfStock ? 'text-[var(--t3)] line-through' : ''}>
+                                  {rupee(prod.price)}
                                 </span>
-                              )}
+                                {item.isOutOfStock && (
+                                  <span className="text-[10px] font-normal text-red-400">
+                                    (Excluded from bill)
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
 
                           {/* Quantity Counter */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--bd)]/50 flex-shrink-0">
                             <div className="flex items-center border border-[var(--bdw)] rounded-full h-[32px] px-2 bg-[var(--s1)]">
                               <button
                                 onClick={() => updateQuantity(item.bagIndex, -1)}
@@ -585,7 +587,7 @@ export const BagPage: React.FC = () => {
             })}
           </div>
         ) : (
-          <div className="mt-12 p-12 text-center rounded-[20px] bg-[var(--s1)] border border-[var(--bd)]">
+          <div className="mt-8 sm:mt-12 p-8 sm:p-12 text-center rounded-[20px] bg-[var(--s1)] border border-[var(--bd)]">
             <div className="text-4xl mb-4">🛍️</div>
             <div className="font-semibold text-base text-[var(--t1)]">Your trial bag is currently empty</div>
             <p className="text-xs text-[var(--t3)] max-w-sm mx-auto mt-2 mb-6">
@@ -602,7 +604,7 @@ export const BagPage: React.FC = () => {
       </div>
 
       {/* Right Column: Checkout Sidebar */}
-      <aside className="p-6 md:p-[36px_34px_44px] bg-[var(--s1)] border-t lg:border-t-0 lg:border-l border-[var(--bd)] flex flex-col gap-5">
+      <aside className="p-4 sm:p-6 md:p-[36px_34px_44px] bg-[var(--s1)] border-t lg:border-t-0 lg:border-l border-[var(--bd)] flex flex-col gap-4 sm:gap-5 min-w-0">
         {/* Delivery Address Card */}
         <div className="p-5 rounded-[20px] bg-[var(--s0)] border border-[var(--bd)]">
           <div className="flex items-center justify-between mb-3">
@@ -673,12 +675,12 @@ export const BagPage: React.FC = () => {
                 aria-label="Coupon code"
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                className="flex-1 px-3 py-2 text-xs rounded-xl bg-[var(--s1)] border border-[var(--bd)] text-[var(--t1)] focus:outline-none focus:border-[var(--gold)] font-mono tracking-wider"
+                className="flex-1 min-w-0 px-3 py-2 text-xs rounded-xl bg-[var(--s1)] border border-[var(--bd)] text-[var(--t1)] focus:outline-none focus:border-[var(--gold)] font-mono tracking-wider"
               />
               <button
                 onClick={handleApplyCoupon}
                 disabled={!couponInput.trim() || validateCouponMutation.isPending}
-                className="px-4 py-2 rounded-xl bg-[var(--gold)] text-black text-xs font-semibold hover:opacity-90 disabled:opacity-50"
+                className="shrink-0 px-4 py-2 rounded-xl bg-[var(--gold)] text-black text-xs font-semibold hover:opacity-90 disabled:opacity-50"
               >
                 {validateCouponMutation.isPending ? 'Verifying...' : 'APPLY'}
               </button>

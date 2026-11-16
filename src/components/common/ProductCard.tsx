@@ -60,11 +60,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
     : 'Today · 1.5 km';
 
   return (
-    <div className="group flex flex-col w-full text-left">
+    <div className="group flex flex-col w-full text-left min-w-0">
       {/* Thumbnail Card Container */}
       <div
         onClick={handleOpenProduct}
-        className="yc relative aspect-square max-h-[200px] w-full rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-all cursor-pointer flex items-center justify-center p-2.5"
+        className="yc relative aspect-square max-h-[200px] w-full rounded-[12px] overflow-hidden bg-white border border-[var(--bd)] group-hover:border-[var(--gold)] transition-all cursor-pointer flex items-center justify-center p-2 sm:p-2.5"
       >
         <img
           src={imgError ? 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=70' : product.img}
@@ -78,16 +78,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
 
         {/* Out of Stock, Store Closed, or Off Badge */}
         {isOutOfStock ? (
-          <div className="absolute left-[7px] top-[7px] px-[7px] py-[3.5px] rounded-[6px] bg-[#EF4444] font-bold text-[8px] tracking-wider leading-none text-white shadow-md uppercase">
+          <div className="absolute left-[7px] top-[7px] max-w-[calc(100%-14px)] truncate px-[7px] py-[3.5px] rounded-[6px] bg-[#EF4444] font-bold text-[7.5px] sm:text-[8px] tracking-wider leading-none text-white shadow-md uppercase">
             Sold Out
           </div>
         ) : isStoreClosed ? (
-          <div className="absolute left-[7px] top-[7px] px-[7px] py-[3.5px] rounded-[6px] bg-[#0B0B0C]/90 backdrop-blur-md font-semibold text-[7.5px] tracking-wider leading-none text-neutral-300 border border-white/15 shadow-sm uppercase flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
-            Closed
+          <div className="absolute left-[7px] top-[7px] max-w-[calc(100%-14px)] truncate px-[7px] py-[3.5px] rounded-[6px] bg-[#0B0B0C]/90 backdrop-blur-md font-semibold text-[7.5px] tracking-wider leading-none text-neutral-300 border border-white/15 shadow-sm uppercase flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 flex-shrink-0" />
+            <span className="truncate">Closed</span>
           </div>
         ) : product.off ? (
-          <div className="absolute left-[7px] top-[7px] px-[6px] py-[3px] rounded-[6px] bg-[#0B0B0C]/85 backdrop-blur-md font-medium text-[8px] leading-none text-[var(--gold)] border border-white/10 shadow-sm">
+          <div className="absolute left-[7px] top-[7px] max-w-[calc(100%-14px)] truncate px-[6px] py-[3px] rounded-[6px] bg-[#0B0B0C]/85 backdrop-blur-md font-medium text-[7.5px] sm:text-[8px] leading-none text-[var(--gold)] border border-white/10 shadow-sm">
             {product.off}
           </div>
         ) : null}
@@ -99,7 +99,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
             onClick={(e) => e.stopPropagation()}
             title="Out of stock"
             aria-label="Out of stock"
-            className="absolute right-[7px] bottom-[7px] px-[8px] py-[4px] rounded-full bg-black/85 backdrop-blur-sm text-[8px] font-semibold uppercase tracking-wider text-[#EF4444] border border-[#EF4444]/40 cursor-not-allowed shadow-sm select-none"
+            className="absolute right-[7px] bottom-[7px] px-[7px] py-[3.5px] rounded-full bg-black/85 backdrop-blur-sm text-[7.5px] sm:text-[8px] font-semibold uppercase tracking-wider text-[#EF4444] border border-[#EF4444]/40 cursor-not-allowed shadow-sm select-none"
           >
             Out of stock
           </button>
@@ -108,7 +108,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
             onClick={handleAdd}
             title={`${currentStore?.name || 'Showroom'} is currently closed · Click to view details & contact rep`}
             aria-label="Store closed"
-            className="yc absolute right-[7px] bottom-[7px] px-[8px] py-[4px] rounded-full bg-[#1A1918]/90 backdrop-blur-sm text-[8px] font-medium uppercase tracking-wider text-neutral-300 border border-white/15 hover:border-[var(--gold)] hover:text-white transition-all shadow-sm select-none"
+            className="yc absolute right-[7px] bottom-[7px] px-[7px] py-[3.5px] rounded-full bg-[#1A1918]/90 backdrop-blur-sm text-[7.5px] sm:text-[8px] font-medium uppercase tracking-wider text-neutral-300 border border-white/15 hover:border-[var(--gold)] hover:text-white transition-all shadow-sm select-none"
           >
             Store Closed
           </button>
@@ -117,7 +117,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
             onClick={handleAdd}
             title={hasMultipleVariants ? 'Select options' : 'Add to bag'}
             aria-label={`Add ${product.name} to bag`}
-            className="yc absolute right-[7px] bottom-[7px] w-[28px] h-[28px] rounded-full bg-[#0B0B0C] shadow-md border border-white/10 flex items-center justify-center font-normal text-[15px] leading-none text-white hover:bg-[var(--gold)] hover:text-black active:scale-95 transition-all"
+            className="yc absolute right-[7px] bottom-[7px] w-[28px] h-[28px] sm:w-[30px] sm:h-[30px] rounded-full bg-[#0B0B0C] shadow-md border border-white/10 flex items-center justify-center font-normal text-[15px] leading-none text-white hover:bg-[var(--gold)] hover:text-black active:scale-95 transition-all"
           >
             +
           </button>
@@ -125,14 +125,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
       </div>
 
       {/* Store & Rating */}
-      <div className="flex items-center gap-[4px] mt-[8px] mb-[3px]">
+      <div className="flex items-center justify-between gap-1.5 mt-[8px] mb-[3px] min-w-0">
         <button
           onClick={handleGoStore}
-          className="yc text-[9.5px] font-normal leading-none text-[var(--t3)] hover:text-[var(--t1)] truncate max-w-[120px]"
+          className="yc text-[9.5px] font-normal leading-none text-[var(--t3)] hover:text-[var(--t1)] truncate min-w-0 flex-1 text-left"
         >
           {storeName}
         </button>
-        <span className="text-[9px] font-medium leading-none text-[var(--gold)]">
+        <span className="text-[9px] font-medium leading-none text-[var(--gold)] shrink-0">
           ★ {storeRating}
         </span>
       </div>
@@ -146,12 +146,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, store }) => {
       </button>
 
       {/* Prices */}
-      <div className="flex items-baseline gap-1.5 mt-[4px]">
-        <span className="font-semibold text-[13px] leading-none text-[var(--t1)]">
+      <div className="flex flex-wrap items-baseline gap-1 sm:gap-1.5 mt-[4px]">
+        <span className="font-semibold text-[12px] sm:text-[13px] leading-none text-[var(--t1)]">
           {rupee(product.price)}
         </span>
         {product.mrp > product.price && (
-          <span className="font-normal text-[10px] leading-none text-[var(--t4)] line-through">
+          <span className="font-normal text-[9.5px] sm:text-[10px] leading-none text-[var(--t4)] line-through">
             {rupee(product.mrp)}
           </span>
         )}

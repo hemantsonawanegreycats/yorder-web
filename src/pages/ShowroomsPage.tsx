@@ -66,22 +66,22 @@ export const ShowroomsPage: React.FC = () => {
       {/* Top Split Hero Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1px] bg-[var(--s2)] border-b border-[var(--s2)]">
         {/* Left Editorial Info */}
-        <div className="bg-[var(--bg)] p-6 md:p-[44px_34px] flex flex-col justify-center">
+        <div className="bg-[var(--bg)] p-4 sm:p-6 md:p-[44px_34px] flex flex-col justify-center">
           <div className="font-medium text-[9px] leading-none tracking-[0.18em] text-[var(--gold)]">
             {storeList.length} SHOWROOMS · 4 KM RADIUS
           </div>
-          <h1 className="font-light text-[34px] md:text-[44px] leading-[1.05] tracking-[-0.04em] text-[var(--t1)] mt-[18px]">
+          <h1 className="font-light text-[26px] sm:text-[34px] md:text-[44px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] text-[var(--t1)] mt-3 sm:mt-[18px]">
             An index of
             <br />
             <span className="font-semibold">every shelf near you</span>
           </h1>
-          <p className="font-normal text-[13px] leading-[1.7] text-[var(--t3)] mt-5 max-w-[52ch]">
+          <p className="font-normal text-[12px] sm:text-[13px] leading-[1.7] text-[var(--t3)] mt-3 sm:mt-5 max-w-[52ch]">
             Counted by the people who work there, not a warehouse feed. Real local showrooms in Mumbai with live inventory.
           </p>
-          <div className="flex items-center gap-3 mt-[26px]">
+          <div className="flex items-center gap-3 mt-5 sm:mt-[26px]">
             <button
               onClick={() => go('products')}
-              className="yc h-[46px] px-[26px] rounded-[23px] bg-[var(--acc)] flex items-center font-semibold text-[13px] text-[var(--on-acc)] hover:opacity-90 active:scale-95 shadow-md"
+              className="yc h-[40px] sm:h-[46px] px-5 sm:px-[26px] rounded-[23px] bg-[var(--acc)] flex items-center font-semibold text-[12px] sm:text-[13px] text-[var(--on-acc)] hover:opacity-90 active:scale-95 shadow-md"
             >
               Browse the shelves
             </button>
@@ -89,29 +89,29 @@ export const ShowroomsPage: React.FC = () => {
         </div>
 
         {/* Right Interactive Mumbai Showroom Map */}
-        <div className="relative min-h-[360px] md:min-h-[400px] overflow-hidden">
+        <div className="relative min-h-[300px] sm:min-h-[360px] md:min-h-[400px] overflow-hidden">
           <MumbaiShowroomMap stores={storeList} onSelectStore={handleOpenStore} />
         </div>
       </div>
 
       {/* Two-Column Index Section */}
       <div className="grid grid-cols-1 md:grid-cols-[232px_1fr]">
-        {/* Left: The Index List */}
-        <aside className="p-6 md:p-[28px_24px] border-r border-[var(--s2)] flex flex-col gap-4">
+        {/* Left: The Index List (Horizontal chips on mobile, vertical sidebar on md+) */}
+        <aside className="p-3.5 sm:p-4 md:p-[28px_24px] border-b md:border-b-0 md:border-r border-[var(--s2)] flex flex-col gap-3 md:gap-4 min-w-0">
           <div className="font-medium text-[9px] leading-none tracking-[0.16em] text-[var(--t3)]">
             THE INDEX
           </div>
-          <div className="flex flex-col gap-[2px]">
+          <div className="flex md:flex-col gap-2 md:gap-[2px] overflow-x-auto no-scrollbar pb-0.5 md:pb-0">
             {chapters.map((r, i) => {
               const isSelected = idx === i;
               return (
                 <button
                   key={r.num}
                   onClick={() => setIdx(i)}
-                  className="yc flex items-center gap-[11px] p-[10px_11px] rounded-[9px] text-[12px] text-left transition-all"
+                  className="yc shrink-0 flex items-center gap-2 md:gap-[11px] px-3 py-2 md:p-[10px_11px] rounded-[9px] text-[11.5px] md:text-[12px] text-left transition-all"
                   style={{
                     background: isSelected ? 'var(--s1)' : 'transparent',
-                    border: isSelected ? '1px solid var(--bd)' : '1px solid transparent',
+                    border: isSelected ? '1px solid var(--bd)' : '1px solid var(--s2)',
                     color: isSelected ? 'var(--t1)' : 'var(--t2)',
                     fontWeight: isSelected ? 500 : 400,
                   }}
@@ -119,7 +119,7 @@ export const ShowroomsPage: React.FC = () => {
                   <span className="font-mono font-medium text-[10px] text-[var(--gold)] flex-shrink-0">
                     {r.num}
                   </span>
-                  <span className="flex-1 leading-snug">{r.name}</span>
+                  <span className="md:flex-1 whitespace-nowrap md:whitespace-normal leading-snug">{r.name}</span>
                   <span className="text-[9.5px] text-[var(--t3)] flex-shrink-0">
                     {r.count}
                   </span>
@@ -130,7 +130,7 @@ export const ShowroomsPage: React.FC = () => {
         </aside>
 
         {/* Right: Chapter Detail */}
-        <main className="p-6 md:p-[28px_34px_44px] flex flex-col">
+        <main className="p-4 sm:p-6 md:p-[28px_34px_44px] flex flex-col min-w-0">
           {isError ? (
             <ErrorState
               title="Could not load showrooms"
@@ -145,30 +145,30 @@ export const ShowroomsPage: React.FC = () => {
           ) : (
             <>
               {/* Top Divider with Stats */}
-              <div className="flex items-center gap-[14px] mb-4">
+              <div className="flex items-center gap-2.5 sm:gap-[14px] mb-3 sm:mb-4">
             <span className="font-mono font-medium text-[11px] text-[var(--gold)]">
               {chapter.num}
             </span>
             <span className="flex-1 h-[1px] bg-[var(--s2)]" />
-            <span className="font-medium text-[9px] tracking-[0.16em] text-[var(--t3)] uppercase">
+            <span className="font-medium text-[8.5px] sm:text-[9px] tracking-[0.14em] sm:tracking-[0.16em] text-[var(--t3)] uppercase truncate max-w-[200px] sm:max-w-none">
               {chapter.stat}
             </span>
           </div>
 
           {/* Heading */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-[18px]">
-            <h2 className="font-semibold text-[24px] md:text-[28px] leading-none tracking-[-0.03em] text-[var(--t1)]">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1.5 sm:gap-2 mb-4 sm:mb-[18px]">
+            <h2 className="font-semibold text-[20px] sm:text-[24px] md:text-[28px] leading-none tracking-[-0.03em] text-[var(--t1)]">
               {chapter.name}
             </h2>
-            <div className="font-normal text-[11px] text-[var(--t3)]">
+            <div className="font-normal text-[10.5px] sm:text-[11px] text-[var(--t3)]">
               median {chapter.eta} to your door
             </div>
           </div>
 
           {/* Chapter Split Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-6 md:gap-[22px]">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-4 sm:gap-6 md:gap-[22px]">
             {/* Left Atmospheric Image Quote Card */}
-            <div className="relative rounded-[18px] overflow-hidden bg-[var(--s1)] min-h-[260px] flex flex-col justify-end p-5 border border-[var(--bd)]">
+            <div className="relative rounded-[16px] sm:rounded-[18px] overflow-hidden bg-[var(--s1)] min-h-[200px] sm:min-h-[260px] flex flex-col justify-end p-4 sm:p-5 border border-[var(--bd)]">
               <img
                 src={chapter.img}
                 alt={chapter.name}

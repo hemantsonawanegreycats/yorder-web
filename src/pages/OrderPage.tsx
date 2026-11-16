@@ -130,7 +130,7 @@ export const OrderPage: React.FC = () => {
   const itemCount = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
 
   return (
-    <div className="max-w-[920px] w-full mx-auto px-4 md:px-[34px] py-10 md:py-[52px] pb-[64px] min-h-[calc(100vh-140px)]">
+    <div className="max-w-[920px] w-full mx-auto px-3.5 sm:px-4 md:px-[34px] py-6 sm:py-10 md:py-[52px] pb-12 sm:pb-[64px] min-h-[calc(100vh-140px)]">
       <SEO
         title={`Order #${order.id} Tracking — Yorder`}
         description="Real-time doorstep trial delivery tracking."
@@ -138,12 +138,12 @@ export const OrderPage: React.FC = () => {
       />
 
       {/* Real Order Identifier Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="font-medium text-[9px] leading-none tracking-[0.18em] text-[var(--gold)]">
           ORDER #{order.id}
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider ${
+          className={`px-3 py-1 rounded-full text-[9.5px] sm:text-[10px] font-bold tracking-wider ${
             isCancelled
               ? 'bg-red-500/15 text-red-400 border border-red-500/30'
               : isDelivered
@@ -155,7 +155,7 @@ export const OrderPage: React.FC = () => {
         </span>
       </div>
 
-      <h1 className="font-light text-[32px] md:text-[42px] leading-[1.1] tracking-[-0.04em] text-[var(--t1)] mt-4">
+      <h1 className="font-light text-[24px] sm:text-[32px] md:text-[42px] leading-[1.15] sm:leading-[1.1] tracking-[-0.04em] text-[var(--t1)] mt-3 sm:mt-4 break-words">
         {isCancelled
           ? 'This order was cancelled.'
           : isDelivered
@@ -167,7 +167,7 @@ export const OrderPage: React.FC = () => {
           : `${order.vendor?.name || 'Showroom'} is packing your bag.`}
       </h1>
 
-      <p className="font-normal text-[13px] leading-[1.7] text-[var(--t3)] mt-3 max-w-[65ch]">
+      <p className="font-normal text-[12px] sm:text-[13px] leading-[1.7] text-[var(--t3)] mt-2.5 sm:mt-3 max-w-[65ch]">
         {order.current_order_status?.comment ||
           (isDelivered
             ? 'The rider waits ten minutes at your door while you try items on. You only keep and pay for what fits.'
@@ -178,21 +178,21 @@ export const OrderPage: React.FC = () => {
 
       {/* Stepper Card */}
       {!isCancelled && (
-        <div className="mt-8 p-6 md:p-[26px_28px] rounded-[20px] bg-[var(--s0)] border border-[#C8A06A]/30 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="mt-6 sm:mt-8 p-4 sm:p-6 md:p-[26px_28px] rounded-[18px] sm:rounded-[20px] bg-[var(--s0)] border border-[#C8A06A]/30 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 font-medium text-[9px] tracking-[0.16em] text-[var(--gold)]">
               <span className="w-[6px] h-[6px] rounded-full bg-[var(--gold)] animate-ping" />
               {isDelivered ? 'COMPLETED' : activeStepIdx === 2 ? 'OUT FOR DELIVERY' : 'IN PROGRESS'}
             </div>
-            <div className="font-mono font-medium text-[11.5px] text-[var(--t2)]">
+            <div className="font-mono font-medium text-[10.5px] sm:text-[11.5px] text-[var(--t2)]">
               ETA: ~35 MIN
             </div>
           </div>
 
           {/* Stepper Bar */}
-          <div className="relative mt-8 mb-4">
+          <div className="relative mt-6 sm:mt-8 mb-3 sm:mb-4">
             {/* Background Track running strictly between center of circle 1 and center of circle 4 */}
-            <div className="absolute top-4 left-4 right-4 h-[2.5px] -translate-y-1/2 bg-[var(--s2)] rounded-full overflow-hidden">
+            <div className="absolute top-3.5 sm:top-4 left-3.5 right-3.5 sm:left-4 sm:right-4 h-[2.5px] -translate-y-1/2 bg-[var(--s2)] rounded-full overflow-hidden">
               {/* Active Progress Fill */}
               <div
                 className="h-full bg-[var(--gold)] transition-all duration-700 rounded-full shadow-[0_0_8px_rgba(200,160,106,0.5)]"
@@ -208,7 +208,7 @@ export const OrderPage: React.FC = () => {
                 return (
                   <div key={s.key} className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] transition-all z-10 ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-[10px] sm:text-[11px] transition-all z-10 ${
                         isCurrent
                           ? 'bg-[var(--gold)] text-black ring-4 ring-[var(--gold)]/20 shadow-md scale-105'
                           : isPassed
@@ -219,7 +219,7 @@ export const OrderPage: React.FC = () => {
                       {isPassed ? '✓' : idx + 1}
                     </div>
                     <span
-                      className={`text-[11px] mt-2 font-medium ${
+                      className={`text-[10px] sm:text-[11px] mt-1.5 sm:mt-2 font-medium whitespace-nowrap ${
                         isCurrent
                           ? 'text-[var(--gold)] font-bold'
                           : isPassed
@@ -240,12 +240,12 @@ export const OrderPage: React.FC = () => {
       {/* Rider & OTP Section (if assigned) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
         {/* Showroom & Rider Details */}
-        <div className="p-5 rounded-[20px] bg-[var(--s1)] border border-[var(--bd)]">
+        <div className="p-4 sm:p-5 rounded-[20px] bg-[var(--s1)] border border-[var(--bd)]">
           <div className="font-medium text-[9px] tracking-[0.16em] text-[var(--gold)] mb-3">
             SHOWROOM & DISPATCH
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[var(--s2)] flex items-center justify-center font-bold text-xs text-[var(--gold)] overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-[var(--s2)] flex items-center justify-center font-bold text-xs text-[var(--gold)] overflow-hidden flex-shrink-0">
               {order.vendor?.icon ? (
                 <img src={order.vendor.icon} alt={order.vendor.name} className="w-full h-full object-cover" />
               ) : (
@@ -253,17 +253,17 @@ export const OrderPage: React.FC = () => {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-xs text-[var(--t1)]">
+              <div className="font-semibold text-xs text-[var(--t1)] truncate">
                 {order.vendor?.name || 'Verified Showroom Partner'}
               </div>
-              <div className="text-[11px] text-[var(--t3)] mt-0.5">
+              <div className="text-[11px] text-[var(--t3)] mt-0.5 truncate">
                 {riderName ? `Rider: ${riderName}` : 'Assigned showroom delivery fleet'}
               </div>
             </div>
             {riderPhone && (
               <a
                 href={`tel:${riderPhone}`}
-                className="px-3 py-1.5 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-[10.5px] font-bold"
+                className="px-3 py-1.5 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-[10.5px] font-bold flex-shrink-0 whitespace-nowrap"
               >
                 Call Rider
               </a>
@@ -272,7 +272,7 @@ export const OrderPage: React.FC = () => {
         </div>
 
         {/* Delivery Address & OTP */}
-        <div className="p-5 rounded-[20px] bg-[var(--s1)] border border-[var(--bd)]">
+        <div className="p-4 sm:p-5 rounded-[20px] bg-[var(--s1)] border border-[var(--bd)]">
           <div className="flex items-center justify-between mb-3">
             <span className="font-medium text-[9px] tracking-[0.16em] text-[var(--gold)]">
               DESTINATION
@@ -368,17 +368,17 @@ export const OrderPage: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap items-center gap-4 mt-8">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-4 mt-6 sm:mt-8">
         <button
           onClick={handleMessageVendor}
-          className="px-6 py-3 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-xs font-semibold hover:opacity-90 transition-opacity"
+          className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-[11px] sm:text-xs font-semibold hover:opacity-90 transition-opacity text-center justify-center flex items-center"
         >
           Message Showroom
         </button>
 
         <button
           onClick={() => go('products')}
-          className="px-6 py-3 rounded-full bg-[var(--s1)] border border-[var(--bd)] text-[var(--t1)] text-xs font-semibold hover:bg-[var(--s2)] transition-colors"
+          className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-[var(--s1)] border border-[var(--bd)] text-[var(--t1)] text-[11px] sm:text-xs font-semibold hover:bg-[var(--s2)] transition-colors text-center justify-center flex items-center"
         >
           Keep Browsing
         </button>
@@ -386,7 +386,7 @@ export const OrderPage: React.FC = () => {
         {isLive && (
           <button
             onClick={() => setShowCancelDialog(true)}
-            className="px-6 py-3 rounded-full border border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/10 transition-colors ml-auto"
+            className="col-span-2 sm:col-span-1 sm:ml-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border border-red-500/30 text-red-400 text-[11px] sm:text-xs font-semibold hover:bg-red-500/10 transition-colors text-center justify-center flex items-center"
           >
             Cancel Order
           </button>

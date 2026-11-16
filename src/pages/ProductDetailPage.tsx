@@ -180,17 +180,17 @@ export const ProductDetailPage: React.FC = () => {
 
       {/* Top Breadcrumb Bar */}
       <div className="border-b border-[var(--s2)] bg-[var(--bg)]">
-        <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-4 h-[48px] px-4 md:px-8">
-          <div className="flex items-center gap-[12px] min-w-0">
+        <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-2 sm:gap-4 h-[44px] sm:h-[48px] px-3.5 sm:px-4 md:px-8">
+          <div className="flex items-center gap-2 sm:gap-[12px] min-w-0 flex-1">
             <button
               onClick={handleBack}
-              className="yc text-[14px] text-[var(--t2)] hover:text-[var(--t1)] transition-colors p-1"
+              className="yc text-[14px] text-[var(--t2)] hover:text-[var(--t1)] transition-colors p-1 flex-shrink-0"
               title="Go back"
               aria-label="Go back"
             >
               ←
             </button>
-            <span className="font-normal text-[11px] text-[var(--t3)] truncate">
+            <span className="font-normal text-[10.5px] sm:text-[11px] text-[var(--t3)] truncate">
               {product.cat} / {product.brand} / {product.name}
             </span>
           </div>
@@ -198,7 +198,7 @@ export const ProductDetailPage: React.FC = () => {
           {store && (
             <button
               onClick={handleOpenStore}
-              className="yc font-medium text-[10.5px] leading-none tracking-[0.14em] text-[var(--gold)] uppercase hover:underline truncate max-w-[300px]"
+              className="yc font-medium text-[9.5px] sm:text-[10.5px] leading-none tracking-[0.12em] sm:tracking-[0.14em] text-[var(--gold)] uppercase hover:underline truncate max-w-[135px] sm:max-w-[240px] md:max-w-[300px] flex-shrink-0"
             >
               {store.name} · {store.addr}
             </button>
@@ -207,14 +207,14 @@ export const ProductDetailPage: React.FC = () => {
       </div>
 
       {/* Main Two-Column View */}
-      <div className="max-w-[1100px] mx-auto w-full px-4 md:px-6 py-4 md:py-6">
+      <div className="max-w-[1100px] mx-auto w-full px-3.5 sm:px-4 md:px-6 py-4 md:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_370px] xl:grid-cols-[minmax(0,1fr)_390px] gap-6 lg:gap-8 items-start">
           {/* Left Column: Gallery, Reassurance, Related */}
           <div className="flex flex-col gap-4 min-w-0">
             <div className="flex flex-col md:flex-row gap-3">
               {/* Thumbnails (Only show if multiple images exist) */}
               {gallery.length > 1 && (
-                <div className="flex md:flex-col gap-2 w-full md:w-[60px] overflow-x-auto md:overflow-visible flex-shrink-0 order-2 md:order-1">
+                <div className="flex md:flex-col gap-2 w-full md:w-[60px] overflow-x-auto no-scrollbar md:overflow-visible flex-shrink-0 order-2 md:order-1">
                   {gallery.map((img, idx) => {
                     const isSelected = activeGal === idx;
                     return (
@@ -239,7 +239,7 @@ export const ProductDetailPage: React.FC = () => {
 
               {/* Main Visual Display - Compact, White Background, Never Oversized */}
               <div className="flex-1 flex flex-col gap-3 order-1 md:order-2 min-w-0">
-                <div className="relative aspect-square max-h-[360px] md:max-h-[380px] w-full rounded-[16px] overflow-hidden bg-white border border-[var(--bd)] flex items-center justify-center p-4">
+                <div className="relative aspect-square max-h-[290px] sm:max-h-[360px] md:max-h-[380px] w-full rounded-[16px] overflow-hidden bg-white border border-[var(--bd)] flex items-center justify-center p-3 sm:p-4">
                   <img
                     src={currentImage}
                     alt={product.name}
@@ -249,15 +249,15 @@ export const ProductDetailPage: React.FC = () => {
                   />
                   {/* Shelf Tag Pill */}
                   {isCurrentOutOfStock ? (
-                    <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#EF4444] border border-[#EF4444]/30 shadow-sm">
+                    <div className="absolute left-3 top-3 max-w-[calc(100%-24px)] truncate flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#EF4444] border border-[#EF4444]/30 shadow-sm">
                       ○ CURRENTLY OUT OF STOCK
                     </div>
                   ) : !isStoreOpenNow ? (
-                    <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-neutral-300 border border-neutral-600/40 shadow-sm uppercase">
+                    <div className="absolute left-3 top-3 max-w-[calc(100%-24px)] truncate flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-neutral-300 border border-neutral-600/40 shadow-sm uppercase">
                       ○ STORE CLOSED · {store?.hours || 'CLOSED'}
                     </div>
                   ) : (
-                    <div className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#9BD8A0] border border-white/10 shadow-sm">
+                    <div className="absolute left-3 top-3 max-w-[calc(100%-24px)] truncate flex items-center gap-1.5 px-2.5 py-1 rounded-[14px] bg-[#0B0B0C]/85 backdrop-blur-[8px] font-medium text-[8px] tracking-[0.12em] text-[#9BD8A0] border border-white/10 shadow-sm">
                       ● ON THE SHELF NOW
                     </div>
                   )}
@@ -365,7 +365,7 @@ export const ProductDetailPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {sizes.map((sz, idx) => {
                     const isSelected = selectedSizeIdx === idx;
                     const vp = product.variableProducts?.[idx];
@@ -374,7 +374,7 @@ export const ProductDetailPage: React.FC = () => {
                       <button
                         key={`${sz}-${idx}`}
                         onClick={() => setSelectedSizeIdx(idx)}
-                        className="yc h-[44px] rounded-[9px] flex flex-col items-center justify-center gap-0.5 transition-all"
+                        className="yc h-[44px] px-1 rounded-[9px] flex flex-col items-center justify-center gap-0.5 transition-all min-w-0"
                         style={{
                           background: isSelected ? 'var(--acc)' : 'transparent',
                           border: isSelected
@@ -386,7 +386,7 @@ export const ProductDetailPage: React.FC = () => {
                         }}
                       >
                         <span
-                          className="font-semibold text-[11.5px] leading-none"
+                          className="font-semibold text-[11px] sm:text-[11.5px] leading-none px-1.5 max-w-full truncate"
                           style={{
                             color: isSelected ? 'var(--on-acc)' : isVariantOut ? 'var(--t3)' : 'var(--t1)',
                           }}
@@ -411,10 +411,10 @@ export const ProductDetailPage: React.FC = () => {
             {/* Real On-Demand Showroom Dispatch / Closed / Out of stock indicator */}
             {!isStoreOpenNow ? (
               <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-neutral-500" />
-                    <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                    <span className="font-semibold text-[12px] sm:text-[12.5px] text-[var(--t1)]">
                       Showroom Currently Closed
                     </span>
                   </div>
@@ -425,18 +425,18 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
                   <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span> is outside operating hours. You can chat with the shop rep below to enquire about availability once doors open.
                 </div>
-                <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
-                  <span>📍 {store?.addr || 'Bandra West'}</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                  <span className="truncate max-w-[220px] sm:max-w-none">📍 {store?.addr || 'Bandra West'}</span>
                   <span>·</span>
                   <span>💬 Showroom chat available</span>
                 </div>
               </div>
             ) : isCurrentOutOfStock ? (
               <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
-                    <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                    <span className="font-semibold text-[12px] sm:text-[12.5px] text-[var(--t1)]">
                       Currently Sold Out on Floor
                     </span>
                   </div>
@@ -447,18 +447,18 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="text-[11px] text-[var(--t2)] mt-1.5 leading-[1.5]">
                   This item is currently out of stock at <span className="text-[var(--gold)] font-medium">{store?.name || product.brand}</span>. You can chat with the showroom rep below to enquire about restock.
                 </div>
-                <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
-                  <span>📍 {store?.addr || 'Bandra West'}</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                  <span className="truncate max-w-[220px] sm:max-w-none">📍 {store?.addr || 'Bandra West'}</span>
                   <span>·</span>
                   <span>💬 Showroom chat available</span>
                 </div>
               </div>
             ) : (
               <div className="p-3.5 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] mt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse" />
-                    <span className="font-semibold text-[12.5px] text-[var(--t1)]">
+                    <span className="font-semibold text-[12px] sm:text-[12.5px] text-[var(--t1)]">
                       Instant Showroom Dispatch
                     </span>
                   </div>
@@ -472,10 +472,10 @@ export const ProductDetailPage: React.FC = () => {
                     ? 'Rider waits while you try it on.'
                     : 'Delivered directly from the showroom floor.'}
                 </div>
-                <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2.5 pt-2.5 border-t border-[var(--bd)] text-[10px] text-[var(--t3)] font-mono">
                   <span>⏱ {store?.eta || '45 min'}</span>
                   <span>·</span>
-                  <span>📍 {store?.addr || 'Bandra West'}</span>
+                  <span className="truncate max-w-[220px] sm:max-w-none">📍 {store?.addr || 'Bandra West'}</span>
                   <span>·</span>
                   <span>🚪 {isFashionProduct ? 'Try at door' : 'Doorstep delivery'}</span>
                 </div>

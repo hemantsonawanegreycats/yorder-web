@@ -726,32 +726,32 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-black/85 backdrop-blur-md animate-fade-in">
       <div
-        className="relative w-full max-w-2xl rounded-[28px] bg-[var(--bg)] border border-[var(--bd)] shadow-2xl flex flex-col overflow-hidden max-h-[92vh]"
+        className="relative w-full max-w-2xl rounded-[22px] sm:rounded-[28px] bg-[var(--bg)] border border-[var(--bd)] shadow-2xl flex flex-col overflow-hidden max-h-[92dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="p-4 sm:p-5 border-b border-[var(--s2)] flex items-center justify-between bg-[var(--s0)]">
-          <div className="flex items-center gap-3">
+        <div className="p-3.5 sm:p-5 border-b border-[var(--s2)] flex items-center justify-between bg-[var(--s0)] gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {view !== 'list' && addresses && addresses.length > 0 && (
               <button
                 onClick={() => setView('list')}
-                className="p-1.5 rounded-full hover:bg-[var(--s1)] text-[var(--t3)] hover:text-white transition-colors"
+                className="p-1.5 rounded-full hover:bg-[var(--s1)] text-[var(--t3)] hover:text-white transition-colors flex-shrink-0"
                 title="Back to saved addresses"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <div>
-              <h2 className="font-semibold text-base sm:text-lg text-[var(--t1)]">
+            <div className="min-w-0">
+              <h2 className="font-semibold text-sm sm:text-lg text-[var(--t1)] truncate">
                 {view === 'list'
                   ? 'Select Delivery Location'
                   : view === 'map'
                   ? 'Set Location on Map'
                   : 'Enter Doorstep Details'}
               </h2>
-              <p className="text-[11px] text-[var(--t3)]">
+              <p className="text-[10.5px] sm:text-[11px] text-[var(--t3)] truncate">
                 {view === 'list'
                   ? 'Rider will deliver your door trial package here'
                   : view === 'map'
@@ -763,7 +763,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-[var(--t3)] hover:text-white hover:bg-[var(--s1)] transition-colors"
+            className="p-2 rounded-full text-[var(--t3)] hover:text-white hover:bg-[var(--s1)] transition-colors flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -862,11 +862,11 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
 
         {/* VIEW 2: Interactive Visible Map with Search & Professional Pointer */}
         {view === 'map' && (
-          <div className="flex-1 flex flex-col min-h-[460px] relative">
+          <div className="flex-1 flex flex-col min-h-[340px] sm:min-h-[460px] relative">
             {/* Search Floating Header with high stacking context above Leaflet */}
-            <div className="relative p-3.5 bg-[var(--s0)]/98 backdrop-blur-md border-b border-[var(--s2)] flex flex-col gap-2.5 z-[1100]">
+            <div className="relative p-3 sm:p-3.5 bg-[var(--s0)]/98 backdrop-blur-md border-b border-[var(--s2)] flex flex-col gap-2.5 z-[1100]">
               <div className="relative flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2.5 h-11 px-3.5 rounded-2xl bg-[var(--s1)] border border-[var(--bd)] focus-within:border-[var(--gold)] transition-colors shadow-inner">
+                <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-2.5 h-10 sm:h-11 px-3 sm:px-3.5 rounded-2xl bg-[var(--s1)] border border-[var(--bd)] focus-within:border-[var(--gold)] transition-colors shadow-inner">
                   <Search className="w-4 h-4 text-[var(--gold)] flex-shrink-0" />
                   <input
                     type="text"
@@ -876,7 +876,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
                       if (searchResults.length > 0) setShowSearchDropdown(true);
                     }}
                     placeholder="Search locality, street, landmark (e.g. Datta Mandir Vakola, Danda)..."
-                    className="flex-1 bg-transparent border-0 outline-none text-xs text-[var(--t1)] placeholder-[var(--t4)]"
+                    className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xs text-[var(--t1)] placeholder-[var(--t4)]"
                   />
                   {searchQuery && (
                     <button
@@ -899,7 +899,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
                 <button
                   type="button"
                   onClick={handleUseCurrentLocation}
-                  className="h-11 w-11 rounded-2xl bg-[var(--s1)] border border-[var(--bd)] text-[var(--gold)] flex items-center justify-center hover:bg-[var(--s2)] hover:border-[var(--gold)] transition-colors flex-shrink-0 shadow-sm"
+                  className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-[var(--s1)] border border-[var(--bd)] text-[var(--gold)] flex items-center justify-center hover:bg-[var(--s2)] hover:border-[var(--gold)] transition-colors flex-shrink-0 shadow-sm"
                   title="Locate my GPS position"
                 >
                   <Crosshair className="w-4 h-4" />
@@ -907,7 +907,7 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
 
                 {/* Instant Search Dropdown: FLOATS PROUDLY OVER MAP (z-[1200]) */}
                 {showSearchDropdown && searchResults.length > 0 && (
-                  <div className="absolute top-[48px] left-0 right-13 rounded-2xl bg-[var(--s0)] border border-[var(--bd)] shadow-2xl overflow-hidden z-[1200] divide-y divide-[var(--s2)] max-h-[280px] overflow-y-auto">
+                  <div className="absolute top-[46px] sm:top-[48px] left-0 right-0 rounded-2xl bg-[var(--s0)] border border-[var(--bd)] shadow-2xl overflow-hidden z-[1200] divide-y divide-[var(--s2)] max-h-[240px] sm:max-h-[280px] overflow-y-auto">
                     {searchResults.map((res) => (
                       <button
                         key={res.id}
@@ -955,8 +955,8 @@ export const AddressMapModal: React.FC<AddressMapModalProps> = ({ isOpen, onClos
             </div>
 
             {/* Map Canvas Container with 100% visible, crystal-clear Google & OSM Tiles */}
-            <div className="relative flex-1 w-full min-h-[350px] overflow-hidden bg-[#e5e3df] z-0">
-              <div ref={mapContainerRef} className="w-full h-full min-h-[350px]" />
+            <div className="relative flex-1 w-full min-h-[220px] sm:min-h-[350px] overflow-hidden bg-[#e5e3df] z-0">
+              <div ref={mapContainerRef} className="w-full h-full min-h-[220px] sm:min-h-[350px]" />
 
               {/* World-Class Professional Location Pointer Pin (Uber/Swiggy Style) - ALWAYS ON TOP (z-[1000]) */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[1000]">

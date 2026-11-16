@@ -241,8 +241,8 @@ export const ProductsPage: React.FC = () => {
       />
 
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 px-4 md:px-[34px] py-5 md:py-6 border-b border-[var(--s2)]">
-        <div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4 px-3.5 sm:px-4 md:px-[34px] py-4 sm:py-5 md:py-6 border-b border-[var(--s2)]">
+        <div className="min-w-0 w-full sm:w-auto">
           <div className="flex items-center gap-2">
             <span className="font-medium text-[9px] leading-none tracking-[0.18em] text-[var(--gold)] uppercase">
               {filtered.length} ON SHELVES NEAR YOU
@@ -258,49 +258,49 @@ export const ProductsPage: React.FC = () => {
               </span>
             )}
           </div>
-          <h1 className="font-semibold text-[28px] md:text-[36px] leading-none tracking-[-0.035em] text-[var(--t1)] mt-[10px]">
+          <h1 className="font-semibold text-[22px] sm:text-[28px] md:text-[36px] leading-tight sm:leading-none tracking-[-0.035em] text-[var(--t1)] mt-2 sm:mt-[10px] break-words">
             {productsTitle}
           </h1>
         </div>
 
         {/* Sort & Filter Controls */}
-        <div className="flex items-center gap-[10px] w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-[10px] w-full sm:w-auto">
           {/* Mobile Filter Toggle */}
           <button
             onClick={() => setMobileFilterOpen(true)}
-            className="yc md:hidden flex-1 sm:flex-initial h-[36px] px-[15px] rounded-[18px] border border-[var(--bd)] flex items-center justify-center gap-2 text-[11.5px] font-medium text-[var(--t2)] active:scale-95 transition-all"
+            className="yc md:hidden flex-1 sm:flex-initial min-w-0 h-[34px] sm:h-[36px] px-2.5 sm:px-[15px] rounded-[18px] border border-[var(--bd)] flex items-center justify-center gap-1.5 sm:gap-2 text-[10.5px] sm:text-[11.5px] font-medium text-[var(--t2)] active:scale-95 transition-all"
           >
-            <SlidersHorizontal size={14} />
+            <SlidersHorizontal size={13} className="shrink-0" />
             <span>Filters</span>
             {activeFiltersCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-[var(--gold)] text-[#0B0B0C] text-[10px] font-bold flex items-center justify-center">
+              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[var(--gold)] text-[#0B0B0C] text-[9.5px] sm:text-[10px] font-bold flex items-center justify-center shrink-0">
                 {activeFiltersCount}
               </span>
             )}
           </button>
 
           {/* Sort Dropdown Popup */}
-          <div className="relative flex-1 sm:flex-initial" ref={sortRef}>
+          <div className="relative flex-1 sm:flex-initial min-w-0" ref={sortRef}>
             <button
               type="button"
               onClick={() => setSortOpen((v) => !v)}
-              className={`yc w-full sm:w-auto h-[36px] px-[15px] rounded-[18px] border flex items-center justify-center gap-2 text-[11.5px] font-medium transition-all ${
+              className={`yc w-full sm:w-auto h-[34px] sm:h-[36px] px-2.5 sm:px-[15px] rounded-[18px] border flex items-center justify-center gap-1.5 sm:gap-2 text-[10.5px] sm:text-[11.5px] font-medium transition-all ${
                 sort !== 0
                   ? 'border-[var(--gold)] text-[var(--gold)] bg-[rgba(200,160,106,0.08)]'
                   : 'border-[var(--bd)] text-[var(--t2)] hover:border-[var(--gold)] hover:text-[var(--t1)]'
               }`}
             >
-              <span>Sort · {SORT_OPTIONS[sort]?.short || 'Sort'}</span>
+              <span className="truncate">Sort · {SORT_OPTIONS[sort]?.short || 'Sort'}</span>
               <ChevronDown
                 size={13}
-                className={`transition-transform duration-200 ${
+                className={`shrink-0 transition-transform duration-200 ${
                   sortOpen ? 'rotate-180 text-[var(--gold)]' : 'text-[var(--t3)]'
                 }`}
               />
             </button>
 
             {sortOpen && (
-              <div className="absolute right-0 top-full mt-2 w-[220px] rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] shadow-2xl p-1.5 z-40 backdrop-blur-md">
+              <div className="absolute right-0 top-full mt-2 w-[205px] sm:w-[220px] max-w-[calc(100vw-24px)] rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] shadow-2xl p-1.5 z-40 backdrop-blur-md">
                 <div className="px-3 py-1.5 text-[9px] font-medium tracking-[0.14em] text-[var(--t3)] uppercase">
                   Sort products by
                 </div>
@@ -333,7 +333,7 @@ export const ProductsPage: React.FC = () => {
           {activeFiltersCount > 0 && (
             <button
               onClick={clearFilters}
-              className="yc h-[36px] px-[14px] rounded-[18px] border border-[var(--bdw)] flex items-center justify-center gap-1.5 text-[11.5px] font-medium text-[var(--tw)] hover:bg-[var(--sw)] transition-colors"
+              className="yc shrink-0 h-[34px] sm:h-[36px] px-3 sm:px-[14px] rounded-[18px] border border-[var(--bdw)] flex items-center justify-center gap-1.5 text-[10.5px] sm:text-[11.5px] font-medium text-[var(--tw)] hover:bg-[var(--sw)] transition-colors"
             >
               <RotateCcw size={12} />
               <span className="hidden sm:inline">Clear all</span>
@@ -344,7 +344,7 @@ export const ProductsPage: React.FC = () => {
       </div>
 
       {/* Quick Filter Pills Row (Desktop & Mobile) */}
-      <div className="flex items-center gap-2 px-4 md:px-[34px] py-3 border-b border-[var(--s2)] overflow-x-auto no-scrollbar bg-[var(--bg)]">
+      <div className="flex items-center gap-2 px-3.5 sm:px-4 md:px-[34px] py-2.5 sm:py-3 border-b border-[var(--s2)] overflow-x-auto no-scrollbar bg-[var(--bg)]">
         {/* In Stock Only Pill */}
         <button
           onClick={() => setInStockOnly((v) => !v)}
@@ -677,18 +677,18 @@ export const ProductsPage: React.FC = () => {
 
         {/* Right Products Content */}
         <main className="flex flex-col min-w-0">
-          <div className="px-4 md:px-[34px] py-4 flex items-baseline justify-between border-b border-[var(--s2)]">
-            <h2 className="font-semibold text-[18px] leading-none tracking-[-0.02em] text-[var(--t1)]">
+          <div className="px-3.5 sm:px-4 md:px-[34px] py-3 sm:py-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-[var(--s2)]">
+            <h2 className="font-semibold text-[15px] sm:text-[18px] leading-none tracking-[-0.02em] text-[var(--t1)] truncate max-w-full">
               {brand ? brand : selectedStore ? selectedStore.name : 'On the shelf now'}
             </h2>
-            <span className="font-mono text-[11px] text-[var(--t3)]">
+            <span className="font-mono text-[10px] sm:text-[11px] text-[var(--t3)]">
               {filtered.length} matching {hasNextPage ? '· Scroll down for more' : '· End of catalog'}
             </span>
           </div>
 
           {/* Product Grid / Skeleton / Error / Empty State */}
           {isError ? (
-            <div className="px-4 md:px-[34px] py-10">
+            <div className="px-3.5 sm:px-4 md:px-[34px] py-10">
               <ErrorState
                 title="Could not load showroom products"
                 message="Failed to connect to the showroom product catalog. Please check your internet connection or retry."
@@ -696,14 +696,14 @@ export const ProductsPage: React.FC = () => {
               />
             </div>
           ) : isLoading ? (
-            <div className="px-4 md:px-[34px] py-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-3.5">
+            <div className="px-3.5 sm:px-4 md:px-[34px] py-4 sm:py-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5 sm:gap-3 md:gap-3.5">
               {[...Array(12)].map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))}
             </div>
           ) : filtered.length > 0 ? (
-            <div className="px-4 md:px-[34px] py-6 flex flex-col">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-3.5">
+            <div className="px-3.5 sm:px-4 md:px-[34px] py-4 sm:py-6 flex flex-col">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5 sm:gap-3 md:gap-3.5">
                 {filtered.map((product) => (
                   <ProductCard
                     key={product.id}

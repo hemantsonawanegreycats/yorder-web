@@ -104,25 +104,25 @@ export const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-8 min-h-[calc(100vh-140px)]">
+    <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-4 md:px-8 py-5 sm:py-8 flex flex-col gap-5 sm:gap-8 min-h-[calc(100vh-140px)]">
       <SEO title="User Profile & Settings — Yorder" description="Manage your Yorder profile, saved delivery addresses, and door trials." canonical="https://yorder.com/profile" />
 
       {/* Top Profile Card */}
-      <div className="p-6 md:p-8 rounded-[24px] bg-[var(--s0)] border border-[var(--bd)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-md">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-2xl font-bold text-[var(--gold)] flex-shrink-0">
+      <div className="p-4 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] bg-[var(--s0)] border border-[var(--bd)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 shadow-md">
+        <div className="flex items-center gap-3.5 sm:gap-5 min-w-0 w-full md:w-auto">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-lg sm:text-2xl font-bold text-[var(--gold)] flex-shrink-0">
             {user?.first_name ? user.first_name[0].toUpperCase() : 'YO'}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-2xl text-[var(--t1)]">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-semibold text-lg sm:text-2xl text-[var(--t1)] truncate">
                 {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'Yorder Member'}
               </h1>
-              <span className="inline-flex items-center gap-1 text-[11px] text-[var(--ok)] font-medium px-2 py-0.5 rounded-full bg-[var(--ok)]/10 border border-[var(--ok)]/20">
-                <ShieldCheck className="w-3.5 h-3.5" /> Verified
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-[var(--ok)] font-medium px-2 py-0.5 rounded-full bg-[var(--ok)]/10 border border-[var(--ok)]/20 flex-shrink-0">
+                <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Verified
               </span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-[var(--t3)] font-mono mt-1.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs text-[var(--t3)] font-mono mt-1 sm:mt-1.5 break-all">
               <span>{user?.phone || 'Phone Verified'}</span>
               {user?.email && (
                 <>
@@ -136,17 +136,17 @@ export const ProfilePage: React.FC = () => {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/10 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/10 transition-colors self-start md:self-auto"
         >
           <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-3 border-b border-[var(--bd)] pb-4 overflow-x-auto">
+      <div className="flex items-center gap-2 sm:gap-3 border-b border-[var(--bd)] pb-3.5 sm:pb-4 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('addresses')}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all"
+          className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all"
           style={{
             background: activeTab === 'addresses' ? 'var(--acc)' : 'transparent',
             color: activeTab === 'addresses' ? 'var(--on-acc)' : 'var(--t2)',
@@ -159,7 +159,7 @@ export const ProfilePage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('orders')}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all"
+          className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all"
           style={{
             background: activeTab === 'orders' ? 'var(--acc)' : 'transparent',
             color: activeTab === 'orders' ? 'var(--on-acc)' : 'var(--t2)',
@@ -172,7 +172,7 @@ export const ProfilePage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('profile')}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all"
+          className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-[11px] sm:text-xs font-semibold transition-all"
           style={{
             background: activeTab === 'profile' ? 'var(--acc)' : 'transparent',
             color: activeTab === 'profile' ? 'var(--on-acc)' : 'var(--t2)',
@@ -186,17 +186,17 @@ export const ProfilePage: React.FC = () => {
 
       {/* Tab 1: Addresses */}
       {activeTab === 'addresses' && (
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-5 sm:gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-lg text-[var(--t1)]">Saved Delivery Addresses</h2>
+              <h2 className="font-semibold text-base sm:text-lg text-[var(--t1)]">Saved Delivery Addresses</h2>
               <p className="text-xs text-[var(--t3)] mt-1">
                 Addresses used by showroom riders for 10-minute doorstep trials.
               </p>
             </div>
             <button
               onClick={() => setAddressModalOpen(true)}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-xs font-semibold hover:opacity-90 transition-all shadow-sm"
+              className="self-start sm:self-auto shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-full bg-[var(--acc)] text-[var(--on-acc)] text-xs font-semibold hover:opacity-90 transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" /> Add Address with Map
             </button>
@@ -280,10 +280,10 @@ export const ProfilePage: React.FC = () => {
                 <div
                   key={ord.id}
                   onClick={() => navigate(`/order?order_id=${ord.id}`)}
-                  className="p-5 rounded-[18px] bg-[var(--s0)] border border-[var(--bd)] hover:border-[var(--gold)] cursor-pointer transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
+                  className="p-4 sm:p-5 rounded-[18px] bg-[var(--s0)] border border-[var(--bd)] hover:border-[var(--gold)] cursor-pointer transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 group"
                 >
-                  <div>
-                    <div className="flex items-center gap-3">
+                  <div className="min-w-0 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <span className="font-mono text-xs font-semibold text-[var(--gold)]">
                         ORDER #{ord.id}
                       </span>
@@ -294,11 +294,11 @@ export const ProfilePage: React.FC = () => {
                     <div className="font-medium text-sm text-[var(--t1)] mt-2 group-hover:text-[var(--gold)] transition-colors">
                       {ord.items?.length || 1} Item(s) from showroom
                     </div>
-                    <div className="text-xs text-[var(--t3)] mt-1 font-mono">
+                    <div className="text-[11px] sm:text-xs text-[var(--t3)] mt-1 font-mono">
                       {new Date(ord.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Payment: {ord.payment_method || 'Pay on Keep'}
                     </div>
                   </div>
-                  <div className="flex items-baseline md:items-end flex-col gap-2">
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-2 pt-2.5 md:pt-0 border-t md:border-t-0 border-[var(--bd)]/50">
                     <span className="font-semibold text-base text-[var(--t1)]">
                       {rupee(ord.total || ord.amount || 0)}
                     </span>

@@ -23,6 +23,7 @@ export const ChatPage: React.FC = () => {
 
   const storeList = Object.values(stores || {});
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
+  const [mobileShowList, setMobileShowList] = useState(false);
   const [draft, setDraft] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -45,10 +46,11 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (!requestedVendorId || !realInquiries) return;
     const existing = realInquiries.find(
-      (inq: any) => String(inq.vendor_id ?? inq.vendor?.id) === String(requestedVendorId)
+      (inq: any) => String(inq.vendor_id ?? inq.vendorId ?? inq.vendor?.id) === String(requestedVendorId)
     );
     if (existing) {
       setSelectedInquiryId(existing.id);
+      setMobileShowList(false);
     } else if (isAuthenticated && !createInquiryMutation.isPending && Number(requestedVendorId)) {
       handleStartInquiry(Number(requestedVendorId));
     }
@@ -69,6 +71,7 @@ export const ChatPage: React.FC = () => {
       onSuccess: (data: any) => {
         if (data?.data?.id) {
           setSelectedInquiryId(data.data.id);
+          setMobileShowList(false);
         }
       },
     });
@@ -107,8 +110,13 @@ export const ChatPage: React.FC = () => {
     );
   }
 
+  const existingVendorIds = new Set(
+    (realInquiries || []).map((inq) => String(inq.vendorId ?? inq.vendor?.id))
+  );
+  const availableShowrooms = storeList.filter((s) => !existingVendorIds.has(String(s.id)));
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] w-full h-[calc(100vh-140px)] border-b border-[var(--s2)]">
+    <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[340px_1fr] w-full h-[calc(100dvh-105px)] md:h-[calc(100vh-140px)] min-h-[480px] border-b border-[var(--s2)] overflow-hidden">
       <SEO
         title="Live Showroom Floor Chat — Yorder"
         description="Chat directly with store representatives on the showroom floor. Ask to hold items or verify stock."
@@ -116,15 +124,27 @@ export const ChatPage: React.FC = () => {
       />
 
       {/* Left Column: Real Showroom Inquiries & Vendors */}
-      <aside className="border-r border-[var(--s2)] bg-[var(--s0)] flex flex-col h-full overflow-hidden">
+      <aside
+        className={`${
+          mobileShowList || !activeInquiry ? 'flex' : 'hidden'
+        } md:flex border-r border-[var(--s2)] bg-[var(--s0)] flex-col h-full overflow-hidden`}
+      >
         {/* Header */}
-        <div className="p-4 border-b border-[var(--s2)] flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 border-b border-[var(--s2)] flex items-center justify-between flex-shrink-0">
           <div>
-            <h1 className="font-semibold text-lg text-[var(--t1)]">Showroom Chats</h1>
+            <h1 className="font-semibold text-base sm:text-lg text-[var(--t1)]">Showroom Chats</h1>
             <p className="text-[11px] text-[var(--t3)] font-mono">
               Live with showroom floor teams
             </p>
           </div>
+          {activeInquiry && (
+            <button
+              onClick={() => setMobileShowList(false)}
+              className="md:hidden text-xs font-medium text-[var(--gold)] px-2.5 py-1 rounded-full bg-[var(--s1)] border border-[var(--bd)]"
+            >
+              Back to chat ›
+            </button>
+          )}
         </div>
 
         {/* Inquiries Thread List */}
@@ -139,8 +159,11 @@ export const ChatPage: React.FC = () => {
               return (
                 <button
                   key={inq.id}
-                  onClick={() => setSelectedInquiryId(inq.id)}
-                  className="w-full p-4 flex items-start gap-3 text-left transition-colors hover:bg-[var(--s1)]"
+                  onClick={() => {
+                    setSelectedInquiryId(inq.id);
+                    setMobileShowList(false);
+                  }}
+                  className="w-full p-3.5 sm:p-4 flex items-start gap-3 text-left transition-colors hover:bg-[var(--s1)]"
                   style={{
                     background: isSelected ? 'var(--s1)' : 'transparent',
                   }}
@@ -154,7 +177,7 @@ export const ChatPage: React.FC = () => {
                       <span className="font-medium text-xs text-[var(--t1)] truncate">
                         {vName}
                       </span>
-                      <span className="text-[9.5px] text-[var(--t4)] font-mono">
+                      <span className="text-[9.5px] text-[var(--t4)] font-mono shrink-0">
                         {inq.status || 'OPEN'}
                       </span>
                     </div>
@@ -165,28 +188,30 @@ export const ChatPage: React.FC = () => {
                 </button>
               );
             })
-          ) : (
-            /* If no prior inquiries, show available showrooms to start a live inquiry */
-            <div className="p-4 flex flex-col gap-3">
-              <div className="text-xs font-semibold text-[var(--t2)] uppercase tracking-wider">
+          ) : null}
+
+          {/* Always allow starting a new chat with other nearby showrooms */}
+          {!inquiriesLoading && availableShowrooms.length > 0 && (
+            <div className="p-3.5 sm:p-4 flex flex-col gap-3">
+              <div className="text-[10.5px] font-semibold text-[var(--t2)] uppercase tracking-wider">
                 Start Chat with a Showroom
               </div>
               <p className="text-[11px] text-[var(--t3)] leading-relaxed">
                 Connect directly with floor staff at verified nearby stores:
               </p>
-              <div className="flex flex-col gap-2 mt-2">
-                {storeList.slice(0, 6).map((s) => (
+              <div className="flex flex-col gap-2">
+                {availableShowrooms.slice(0, 6).map((s) => (
                   <button
                     key={s.id}
                     onClick={() => handleStartInquiry(Number(s.id))}
                     disabled={createInquiryMutation.isPending}
-                    className="p-3 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] hover:border-[var(--gold)] flex items-center justify-between text-left transition-colors"
+                    className="p-3 rounded-[14px] bg-[var(--s1)] border border-[var(--bd)] hover:border-[var(--gold)] flex items-center justify-between gap-2 text-left transition-colors"
                   >
-                    <div>
-                      <div className="font-medium text-xs text-[var(--t1)]">{s.name}</div>
-                      <div className="text-[10px] text-[var(--t3)]">{s.addr} · {s.eta}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-xs text-[var(--t1)] truncate">{s.name}</div>
+                      <div className="text-[10px] text-[var(--t3)] truncate">{s.addr} · {s.eta}</div>
                     </div>
-                    <span className="text-xs text-[var(--gold)] font-medium">+ Chat</span>
+                    <span className="text-xs text-[var(--gold)] font-medium shrink-0">+ Chat</span>
                   </button>
                 ))}
               </div>
@@ -196,36 +221,47 @@ export const ChatPage: React.FC = () => {
       </aside>
 
       {/* Right Column: Real Messages Area */}
-      <main className="flex flex-col h-full bg-[var(--bg)]">
+      <main
+        className={`${
+          !mobileShowList && activeInquiry ? 'flex' : 'hidden'
+        } md:flex flex-col h-full bg-[var(--bg)] overflow-hidden`}
+      >
         {activeInquiry ? (
           <>
             {/* Thread Header */}
-            <div className="p-4 border-b border-[var(--s2)] bg-[var(--s0)] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-medium text-xs text-[var(--tw)]">
+            <div className="p-3 sm:p-4 border-b border-[var(--s2)] bg-[var(--s0)] flex items-center justify-between gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <button
+                  onClick={() => setMobileShowList(true)}
+                  className="md:hidden px-2 py-1.5 -ml-1 rounded-lg text-[var(--t2)] hover:bg-[var(--s1)] text-xs font-medium flex items-center gap-1 shrink-0"
+                  aria-label="All showroom chats"
+                >
+                  ← Chats
+                </button>
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center font-medium text-xs text-[var(--tw)] flex-shrink-0">
                   {activeInquiry.vendor?.name?.slice(0, 2).toUpperCase() || 'SH'}
                 </div>
-                <div>
-                  <div className="font-semibold text-sm text-[var(--t1)]">
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-xs sm:text-sm text-[var(--t1)] truncate">
                     {activeInquiry.vendor?.name || 'Showroom Staff'}
                   </div>
-                  <div className="text-[10.5px] text-[var(--ok)] font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--ok)] animate-pulse" />
-                    Live on the floor · Direct representative connection
+                  <div className="text-[10px] sm:text-[10.5px] text-[var(--ok)] font-medium flex items-center gap-1 min-w-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--ok)] animate-pulse flex-shrink-0" />
+                    <span className="truncate">Live on the floor · Direct representative connection</span>
                   </div>
                 </div>
               </div>
 
               <button
                 onClick={() => go('store', { sid: activeInquiry.vendorId })}
-                className="text-xs font-medium text-[var(--gold)] hover:underline flex items-center gap-1"
+                className="text-[11px] sm:text-xs font-medium text-[var(--gold)] hover:underline flex items-center gap-1 shrink-0"
               >
                 <Store className="w-3.5 h-3.5" /> View Store
               </button>
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-3">
+            <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 md:p-6 flex flex-col gap-3">
               {messagesLoading ? (
                 <div className="p-8 text-center text-xs text-[var(--t3)]">Loading conversation...</div>
               ) : realMessages && realMessages.length > 0 ? (
@@ -237,7 +273,7 @@ export const ChatPage: React.FC = () => {
                       className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                     >
                       <div
-                        className={`max-w-[75%] p-3.5 rounded-[18px] text-xs leading-relaxed shadow-sm ${
+                        className={`max-w-[85%] sm:max-w-[75%] break-words p-3 sm:p-3.5 rounded-[18px] text-xs leading-relaxed shadow-sm ${
                           isMe
                             ? 'bg-[var(--acc)] text-[var(--on-acc)] rounded-br-[4px]'
                             : 'bg-[var(--s1)] text-[var(--t1)] border border-[var(--bd)] rounded-bl-[4px]'
@@ -253,7 +289,7 @@ export const ChatPage: React.FC = () => {
                   );
                 })
               ) : (
-                <div className="my-auto text-center flex flex-col items-center gap-3 text-[var(--t3)]">
+                <div className="my-auto text-center flex flex-col items-center gap-3 text-[var(--t3)] px-4">
                   <MessageSquare className="w-8 h-8 text-[var(--t4)]" />
                   <div className="font-medium text-xs text-[var(--t2)]">
                     Connected to {activeInquiry.vendor?.name} floor representative
@@ -267,7 +303,7 @@ export const ChatPage: React.FC = () => {
             </div>
 
             {/* Message Input Form */}
-            <form onSubmit={handleSendMessage} className="p-3.5 border-t border-[var(--s2)] bg-[var(--s0)] flex items-center gap-2">
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-3.5 border-t border-[var(--s2)] bg-[var(--s0)] flex items-center gap-2 flex-shrink-0">
               <input
                 type="text"
                 maxLength={1000}
@@ -275,12 +311,12 @@ export const ChatPage: React.FC = () => {
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={`Message ${activeInquiry.vendor?.name || 'store rep'}...`}
                 aria-label="Chat message"
-                className="flex-1 h-11 px-4 rounded-full bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t1)] outline-none focus:border-[var(--gold)] placeholder-[var(--t4)]"
+                className="flex-1 min-w-0 h-10 sm:h-11 px-3.5 sm:px-4 rounded-full bg-[var(--s1)] border border-[var(--bd)] text-xs text-[var(--t1)] outline-none focus:border-[var(--gold)] placeholder-[var(--t4)]"
               />
               <button
                 type="submit"
                 disabled={!draft.trim() || sendMessageMutation.isPending}
-                className="w-11 h-11 rounded-full bg-[var(--acc)] text-[var(--on-acc)] flex items-center justify-center hover:opacity-90 disabled:opacity-40 transition-all flex-shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[var(--acc)] text-[var(--on-acc)] flex items-center justify-center hover:opacity-90 disabled:opacity-40 transition-all flex-shrink-0"
                 aria-label="Send message"
               >
                 <Send className="w-4 h-4" />

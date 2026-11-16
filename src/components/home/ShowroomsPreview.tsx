@@ -15,19 +15,19 @@ export const ShowroomsPreview: React.FC = () => {
   };
 
   return (
-    <section className="px-4 md:px-[34px] py-[34px]">
-      <div className="flex items-end justify-between mb-5">
-        <div>
-          <h2 className="font-semibold text-[22px] md:text-[26px] leading-none tracking-[-0.025em] text-[var(--t1)]">
+    <section className="px-3.5 sm:px-4 md:px-[34px] py-6 md:py-[34px]">
+      <div className="flex items-end justify-between gap-2 mb-4 sm:mb-5">
+        <div className="min-w-0">
+          <h2 className="font-semibold text-[19px] sm:text-[22px] md:text-[26px] leading-none tracking-[-0.025em] text-[var(--t1)]">
             Showrooms near you
           </h2>
-          <div className="font-normal text-[12px] leading-[1.5] text-[var(--t3)] mt-2">
+          <div className="font-normal text-[11px] sm:text-[12px] leading-[1.5] text-[var(--t3)] mt-1.5 sm:mt-2">
             Real stores, real stock, counted by hand
           </div>
         </div>
         <button
           onClick={() => go('showrooms')}
-          className="yc font-medium text-[11px] leading-none text-[var(--gold)] hover:underline"
+          className="yc font-medium text-[11px] leading-none text-[var(--gold)] hover:underline shrink-0"
         >
           Open the index
         </button>
@@ -40,20 +40,20 @@ export const ShowroomsPreview: React.FC = () => {
           onRetry={() => refetch()}
         />
       ) : isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {[...Array(3)].map((_, i) => (
             <StoreCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {displayStores.map((s) => s && (
             <div
               key={s.id}
               onClick={() => handleOpenStore(s.id)}
-              className="yc flex items-center gap-[14px] p-[14px] rounded-[16px] bg-[var(--s1)] border border-[var(--bd)] hover:border-[var(--bd2)] transition-colors cursor-pointer group"
+              className="yc flex items-center gap-3 sm:gap-[14px] p-3 sm:p-[14px] rounded-[16px] bg-[var(--s1)] border border-[var(--bd)] hover:border-[var(--bd2)] transition-colors cursor-pointer group"
             >
-              <div className="w-[64px] h-[64px] rounded-[12px] overflow-hidden relative bg-[var(--s2)] flex-shrink-0 border border-[var(--bd)]">
+              <div className="w-[52px] h-[52px] sm:w-[64px] sm:h-[64px] rounded-[12px] overflow-hidden relative bg-[var(--s2)] flex-shrink-0 border border-[var(--bd)]">
                 <img
                   src={s.img}
                   alt={s.name}

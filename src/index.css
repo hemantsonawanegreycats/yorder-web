@@ -6,12 +6,16 @@
   --font-mono: 'DM Mono', monospace;
 }
 
+html,
 body {
   margin: 0;
   background: #0B0B0C;
   font-family: var(--font-poppins);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
@@ -108,6 +112,7 @@ a:hover {
   font: 400 12.5px/1 var(--font-poppins);
   color: var(--t1);
   width: 100%;
+  touch-action: manipulation;
 }
 .yin::placeholder {
   color: var(--t4);

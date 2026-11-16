@@ -18,12 +18,12 @@ export const CategoryGrid: React.FC = () => {
   const displayCategories = (categories || []).slice(0, 7);
 
   return (
-    <section className="px-4 md:px-[34px] py-[34px] border-b border-[var(--s2)]">
-      <div className="flex items-baseline justify-between mb-5">
-        <h2 className="font-semibold text-[22px] md:text-[26px] leading-none tracking-[-0.025em] text-[var(--t1)]">
+    <section className="px-3.5 sm:px-4 md:px-[34px] py-6 md:py-[34px] border-b border-[var(--s2)]">
+      <div className="flex items-baseline justify-between gap-2 mb-4 sm:mb-5">
+        <h2 className="font-semibold text-[19px] sm:text-[22px] md:text-[26px] leading-none tracking-[-0.025em] text-[var(--t1)]">
           Browse
         </h2>
-        <span className="font-medium text-[9.5px] leading-none tracking-[0.14em] text-[var(--t3)] uppercase">
+        <span className="font-medium text-[9px] sm:text-[9.5px] leading-none tracking-[0.14em] text-[var(--t3)] uppercase shrink-0">
           {displayCategories.length} CATEGORIES LIVE
         </span>
       </div>
@@ -35,20 +35,20 @@ export const CategoryGrid: React.FC = () => {
           onRetry={() => refetch()}
         />
       ) : isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 md:gap-[14px]">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2.5 sm:gap-3 md:gap-[14px]">
           {[...Array(7)].map((_, i) => (
             <CategoryItemSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 md:gap-[14px]">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2.5 sm:gap-3 md:gap-[14px]">
           {displayCategories.map((c) => (
             <div
               key={c.name}
               onClick={() => handleSelectCategory(c.name)}
-              className="yc flex flex-col gap-[10px] cursor-pointer group"
+              className="yc flex flex-col gap-2 sm:gap-[10px] cursor-pointer group"
             >
-              <div className="relative aspect-square rounded-[14px] overflow-hidden bg-[var(--sw)] border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors">
+              <div className="relative aspect-square rounded-[12px] sm:rounded-[14px] overflow-hidden bg-[var(--sw)] border border-[var(--bd)] group-hover:border-[var(--gold)] transition-colors">
                 <img
                   src={c.img}
                   alt={c.name}
@@ -64,7 +64,7 @@ export const CategoryGrid: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/60 via-transparent to-transparent pointer-events-none" />
               </div>
-              <div className="font-medium text-[11.5px] leading-none text-[var(--t2)] text-center group-hover:text-[var(--gold)] transition-colors">
+              <div className="font-medium text-[10.5px] sm:text-[11.5px] leading-tight text-[var(--t2)] text-center group-hover:text-[var(--gold)] transition-colors line-clamp-1">
                 {c.name}
               </div>
             </div>

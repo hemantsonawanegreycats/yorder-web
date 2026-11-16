@@ -255,7 +255,7 @@ export const StorePage: React.FC = () => {
       />
 
       {/* Store Hero Banner */}
-      <div className="relative min-h-[360px] overflow-hidden bg-[#14120F] flex flex-col justify-between p-6 md:p-[26px_34px_30px]">
+      <div className="relative min-h-[300px] sm:min-h-[360px] overflow-hidden bg-[#14120F] flex flex-col justify-between p-4 sm:p-6 md:p-[26px_34px_30px]">
         <img
           src={currentStore.img}
           alt={currentStore.name}
@@ -264,22 +264,22 @@ export const StorePage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C] via-[#0B0B0C]/40 to-[#0B0B0C]/70 pointer-events-none" />
 
         {/* Top Navigation Row */}
-        <div className="relative z-10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-[14px]">
+        <div className="relative z-10 flex items-center justify-between gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-[14px] min-w-0 flex-1">
             <button
               onClick={handleBack}
-              className="yc w-[34px] h-[34px] rounded-full bg-[#0B0B0C]/60 backdrop-blur-[10px] border border-white/15 flex items-center justify-center text-[15px] text-[#F5F3F0] hover:bg-white/20 transition-colors"
+              className="yc w-[32px] h-[32px] sm:w-[34px] sm:h-[34px] rounded-full bg-[#0B0B0C]/60 backdrop-blur-[10px] border border-white/15 flex items-center justify-center text-[14px] sm:text-[15px] text-[#F5F3F0] hover:bg-white/20 transition-colors flex-shrink-0"
             >
               ←
             </button>
-            <span className="font-normal text-[11px] text-[#CFCBC3] truncate">
+            <span className="font-normal text-[10.5px] sm:text-[11px] text-[#CFCBC3] truncate">
               Showrooms / {currentStore.cat} / {currentStore.name}
             </span>
           </div>
 
           <button
             onClick={handleFollowToggle}
-            className="yc h-[34px] px-4 rounded-[17px] backdrop-blur-[10px] flex items-center text-[11px] font-medium transition-all"
+            className="yc h-[30px] sm:h-[34px] px-3 sm:px-4 rounded-[17px] backdrop-blur-[10px] flex items-center text-[10.5px] sm:text-[11px] font-medium transition-all flex-shrink-0"
             style={{
               background: isFollowing ? '#F2ECE1' : 'rgba(11,11,12,.6)',
               color: isFollowing ? '#0B0B0C' : '#F5F3F0',
@@ -291,15 +291,15 @@ export const StorePage: React.FC = () => {
         </div>
 
         {/* Bottom Store Profile & Stats */}
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 pt-10">
-          <div className="flex items-start md:items-end gap-5">
-            <div className="w-[68px] h-[68px] rounded-[20px] bg-[#F2ECE1] flex items-center justify-center font-semibold text-[21px] leading-none text-[#0B0B0C] flex-shrink-0 shadow-lg">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-5 sm:gap-6 pt-8 sm:pt-10">
+          <div className="flex items-start md:items-end gap-3.5 sm:gap-5 min-w-0">
+            <div className="w-[52px] h-[52px] sm:w-[68px] sm:h-[68px] rounded-[15px] sm:rounded-[20px] bg-[#F2ECE1] flex items-center justify-center font-semibold text-[17px] sm:text-[21px] leading-none text-[#0B0B0C] flex-shrink-0 shadow-lg">
               {currentStore.ini}
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-[10px] mb-[14px]">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-[8px] sm:gap-[10px] mb-2.5 sm:mb-[14px]">
                 <span
-                  className={`flex items-center gap-[7px] px-[11px] py-[6px] rounded-[14px] backdrop-blur-[8px] font-medium text-[8.5px] tracking-[0.14em] ${
+                  className={`flex items-center gap-[6px] sm:gap-[7px] px-2.5 sm:px-[11px] py-1 sm:py-[6px] rounded-[14px] backdrop-blur-[8px] font-medium text-[8px] sm:text-[8.5px] tracking-[0.12em] sm:tracking-[0.14em] ${
                     currentStore.isOpen !== false
                       ? 'bg-[#0B0B0C]/60 border border-[#9BD8A0]/35 text-[#9BD8A0]'
                       : 'bg-[#0B0B0C]/70 border border-neutral-700 text-neutral-400'
@@ -313,60 +313,60 @@ export const StorePage: React.FC = () => {
                   {currentStore.hours}
                 </span>
               </div>
-              <h1 className="font-semibold text-[28px] md:text-[38px] leading-none tracking-[-0.035em] text-[#F7F3EC]">
+              <h1 className="font-semibold text-[22px] sm:text-[28px] md:text-[38px] leading-[1.08] md:leading-none tracking-[-0.035em] text-[#F7F3EC] break-words">
                 {currentStore.name}
               </h1>
-              <div className="font-normal text-[12px] leading-[1.5] text-[#CFCBC3] mt-[10px]">
+              <div className="font-normal text-[11px] sm:text-[12px] leading-[1.5] text-[#CFCBC3] mt-2 sm:mt-[10px] break-words">
                 {currentStore.cat} · {currentStore.addr}
               </div>
             </div>
           </div>
 
           {/* Stats Bar (Synced with mobile app live metrics) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 lg:gap-8 flex-shrink-0 pb-[6px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 lg:gap-8 w-full lg:w-auto flex-shrink-0 pt-2 lg:pt-0 pb-[6px]">
             <div>
-              <div className="font-semibold text-[17px] leading-none text-[#C8A06A]">
+              <div className="font-semibold text-[15px] sm:text-[17px] leading-none text-[#C8A06A]">
                 ★ {currentStore.rating && currentStore.rating !== 'New' ? currentStore.rating : 'New'}
               </div>
-              <div className="font-normal text-[10px] text-[#9A968E] mt-2">
+              <div className="font-normal text-[9.5px] sm:text-[10px] text-[#9A968E] mt-1.5 sm:mt-2">
                 {currentStore.ratingCount && currentStore.ratingCount > 0
                   ? `${currentStore.ratingCount} ratings`
                   : 'Showroom'}
               </div>
             </div>
             <div>
-              <div className="font-semibold text-[17px] leading-none text-[#F5F3F0]">
+              <div className="font-semibold text-[15px] sm:text-[17px] leading-none text-[#F5F3F0]">
                 {distanceKmText}
               </div>
-              <div className="font-normal text-[10px] text-[#9A968E] mt-2">
+              <div className="font-normal text-[9.5px] sm:text-[10px] text-[#9A968E] mt-1.5 sm:mt-2">
                 {travelTimeText}
               </div>
             </div>
             <div>
-              <div className="font-semibold text-[17px] leading-none text-[#F5F3F0]">
+              <div className="font-semibold text-[15px] sm:text-[17px] leading-none text-[#F5F3F0]">
                 {deliveryEtaText}
               </div>
-              <div className="font-normal text-[10px] text-[#9A968E] mt-2">home delivery</div>
+              <div className="font-normal text-[9.5px] sm:text-[10px] text-[#9A968E] mt-1.5 sm:mt-2">home delivery</div>
             </div>
             <div>
-              <div className="font-semibold text-[17px] leading-none text-[#F5F3F0]">
+              <div className="font-semibold text-[15px] sm:text-[17px] leading-none text-[#F5F3F0]">
                 {effectiveStock.length > 0 ? effectiveStock.length : (currentStore.count || 'Active')}
               </div>
-              <div className="font-normal text-[10px] text-[#9A968E] mt-2">on the floor</div>
+              <div className="font-normal text-[9.5px] sm:text-[10px] text-[#9A968E] mt-1.5 sm:mt-2">on the floor</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Shelf Tabs Navigation Bar */}
-      <div className="flex items-center gap-3 px-4 md:px-[34px] h-[56px] border-b border-[var(--s2)] bg-[var(--s0)] overflow-x-auto">
+      <div className="flex items-center gap-2 sm:gap-3 px-3.5 sm:px-4 md:px-[34px] h-[50px] sm:h-[56px] border-b border-[var(--s2)] bg-[var(--s0)] overflow-x-auto no-scrollbar">
         {tabDefs.map((t, idx) => {
           const isSelected = activeTab === idx;
           return (
             <button
               key={t.label}
               onClick={() => setActiveTab(idx)}
-              className="yc h-[34px] px-4 rounded-[17px] flex items-center text-[11.5px] whitespace-nowrap transition-colors"
+              className="yc h-[30px] sm:h-[34px] px-3 sm:px-4 rounded-[17px] flex items-center text-[11px] sm:text-[11.5px] whitespace-nowrap transition-colors flex-shrink-0"
               style={{
                 background: isSelected ? 'var(--acc)' : 'transparent',
                 color: isSelected ? 'var(--on-acc)' : 'var(--t2)',
@@ -378,10 +378,10 @@ export const StorePage: React.FC = () => {
             </button>
           );
         })}
-        <div className="flex-1" />
+        <div className="flex-1 min-w-[8px]" />
         <button
           onClick={handleAskRep}
-          className="yc h-[36px] px-4 rounded-[18px] border border-[var(--bdw)] flex items-center text-[11px] font-medium text-[var(--tw)] whitespace-nowrap hover:bg-[var(--sw)]"
+          className="yc h-[30px] sm:h-[36px] px-3 sm:px-4 rounded-[18px] border border-[var(--bdw)] flex items-center text-[10.5px] sm:text-[11px] font-medium text-[var(--tw)] whitespace-nowrap hover:bg-[var(--sw)] flex-shrink-0"
         >
           Ask the floor
         </button>
@@ -390,18 +390,18 @@ export const StorePage: React.FC = () => {
       {/* Two Column Layout: Store Inventory & Rep Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px]">
         {/* Left Inventory Shelf */}
-        <div className="p-4 md:p-[28px_34px_40px]">
-          <div className="flex items-baseline justify-between mb-5">
-            <h2 className="font-semibold text-[20px] md:text-[24px] leading-none tracking-[-0.025em] text-[var(--t1)]">
+        <div className="p-3.5 sm:p-4 md:p-[28px_34px_40px] min-w-0">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 sm:mb-5">
+            <h2 className="font-semibold text-[18px] sm:text-[20px] md:text-[24px] leading-none tracking-[-0.025em] text-[var(--t1)]">
               In stock right now
             </h2>
-            <span className="font-mono text-[11px] text-[var(--t3)]">
+            <span className="font-mono text-[10px] sm:text-[11px] text-[var(--t3)]">
               Counted 12 min ago
             </span>
           </div>
 
           {shelfProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3">
               {shelfProducts.map((p) => {
                 const isOut = isProductOutOfStock(p);
                 const hasMultiVariants = Array.isArray(p.variableProducts) && p.variableProducts.length > 1;

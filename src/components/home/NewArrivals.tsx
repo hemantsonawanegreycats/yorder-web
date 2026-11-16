@@ -13,19 +13,19 @@ export const NewArrivals: React.FC = () => {
   const displayList = (products || []).slice(0, 5);
 
   return (
-    <section className="px-4 md:px-[34px] py-[34px] border-b border-[var(--s2)]">
-      <div className="flex items-end justify-between mb-5">
-        <div>
-          <h2 className="font-semibold text-[22px] md:text-[26px] leading-none tracking-[-0.025em] text-[var(--t1)]">
+    <section className="px-3.5 sm:px-4 md:px-[34px] py-6 md:py-[34px] border-b border-[var(--s2)]">
+      <div className="flex items-end justify-between gap-2 mb-4 sm:mb-5">
+        <div className="min-w-0">
+          <h2 className="font-semibold text-[19px] sm:text-[22px] md:text-[26px] leading-none tracking-[-0.025em] text-[var(--t1)]">
             New in near you
           </h2>
-          <div className="font-normal text-[12px] leading-[1.5] text-[var(--t3)] mt-2">
+          <div className="font-normal text-[11px] sm:text-[12px] leading-[1.5] text-[var(--t3)] mt-1.5 sm:mt-2">
             Landed at 6 showrooms this week
           </div>
         </div>
         <button
           onClick={() => go('products')}
-          className="yc font-medium text-[11px] leading-none text-[var(--gold)] hover:underline"
+          className="yc font-medium text-[11px] leading-none text-[var(--gold)] hover:underline shrink-0"
         >
           See all products
         </button>
@@ -38,13 +38,13 @@ export const NewArrivals: React.FC = () => {
           onRetry={() => refetch()}
         />
       ) : isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-[18px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 md:gap-[18px]">
           {[...Array(5)].map((_, i) => (
             <ProductCardSkeleton key={i} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-[18px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 md:gap-[18px]">
           {displayList.map((product) => (
             <ProductCard
               key={product.id}
