@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # Runs automatically every night at 18:00 UTC (11:30 PM IST) before Google's 12:00 AM daily feed fetch
+    - cron: '0 18 * * *'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -23,7 +27,14 @@ jobs:
       - name: 3. Install Dependencies
         run: npm ci
 
-      - name: 4. Build Production Bundle
+      - name: 4. Refresh Google Merchant Feed from Live Backend API
+        continue-on-error: true
+        env:
+          VITE_BACKEND_TARGET: https://api.ywsglobal.com
+          FEED_LIMIT: 5000
+        run: npm run generate:feed
+
+      - name: 5. Build Production Bundle
         env:
           VITE_API_URL: https://api.ywsglobal.com/api
           VITE_SOCKET_URL: https://api.ywsglobal.com
@@ -34,7 +45,7 @@ jobs:
           VITE_RAZORPAY_NAME: Yorder
         run: npm run build
 
-      - name: 5. Sync dist/ to Hostinger via FTP
+      - name: 6. Sync dist/ to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER }}
