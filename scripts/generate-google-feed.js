@@ -26,12 +26,33 @@ const stripHtmlAndEscapeXml = (unsafe) => {
     .replace(/'/g, '&apos;');
 };
 
+async function getGuestToken() {
+  try {
+    const loginRes = await fetch(`${API_URL}/api/auth/user/guest/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (loginRes.ok) {
+      const data = await loginRes.json();
+      return data?.token || null;
+    }
+  } catch (e) {
+    console.warn('[Google Feed Generator] Guest login failed:', e.message);
+  }
+  return null;
+}
+
 async function generateFeed() {
+  console.log(`[Google Feed Generator] Authenticating with ${API_URL}...`);
+  const token = await getGuestToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
   console.log(`[Google Feed Generator] Fetching products from ${API_URL}/api/user/product/all...`);
   let products = [];
 
   try {
-    const res = await fetch(`${API_URL}/api/user/product/all?limit=500`);
+    const res = await fetch(`${API_URL}/api/user/product/all?limit=500`, { headers });
     if (res.ok) {
       const json = await res.json();
       products = json.data || [];
