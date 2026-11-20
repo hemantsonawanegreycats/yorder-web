@@ -90,8 +90,8 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ type }) => {
               <section>
                 <h2 className="text-base font-semibold text-[var(--t1)] mb-2">3. Shipping Rates</h2>
                 <p>
-                  Shipping rates are dynamically computed based on radial distance from the origin showroom to your delivery address
-                  and are shown transparently at checkout before payment. Orders exceeding specified promotion thresholds qualify for free trial shipping.
+                  Standard delivery charge is <strong>₹10</strong> per order across our active delivery zones in Mumbai.
+                  The delivery fee is transparently shown at checkout before order placement.
                 </p>
               </section>
 
@@ -132,7 +132,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ type }) => {
                   <p className="text-[var(--t1)] mt-1">
                     Yorder Webservices<br />
                     Linking Road, Bandra West<br />
-                    Mumbai, Maharashtra 400050, India
+                    Mumbai, Maharashtra 400052, India
                   </p>
                 </div>
                 <div>

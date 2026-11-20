@@ -120,7 +120,7 @@ async function generateFeed() {
       <g:shipping>
         <g:country>IN</g:country>
         <g:service>Express Doorstep Trial</g:service>
-        <g:price>0.00 INR</g:price>
+        <g:price>10.00 INR</g:price>
       </g:shipping>
     </item>`;
   }).join('\n');

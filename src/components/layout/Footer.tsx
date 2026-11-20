@@ -70,7 +70,7 @@ export const Footer: React.FC = () => {
       {/* Verified Business Information Bar for Merchant Review */}
       <div className="border-t border-[var(--s2)]/50 pt-4 flex flex-col sm:flex-row items-center justify-between text-[10px] text-[var(--t4)] gap-2 text-center sm:text-left">
         <span>© {new Date().getFullYear()} Yorder Webservices. All rights reserved.</span>
-        <span>Yorder Webservices • Linking Road, Bandra West, Mumbai, Maharashtra 400050 • +91 99877 31604 • yorderweb@ywsglobal.com</span>
+        <span>Yorder Webservices • Linking Road, Bandra West, Mumbai, Maharashtra 400052 • +91 99877 31604 • yorderweb@ywsglobal.com</span>
       </div>
     </footer>
   );
