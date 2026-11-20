@@ -13,17 +13,35 @@ const __dirname = path.dirname(__filename);
 const API_URL = process.env.VITE_BACKEND_TARGET || 'https://api.ywsglobal.com';
 const SITE_URL = 'https://ywsglobal.com';
 
-const stripHtmlAndEscapeXml = (unsafe) => {
+const escapeXml = (unsafe) => {
   if (!unsafe) return '';
   return String(unsafe)
-    .replace(/<[^>]*>?/gm, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+};
+
+const cleanTextAndEscapeXml = (unsafe, maxLen = 150) => {
+  if (!unsafe) return '';
+  // 1. Strip HTML tags, remove illegal XML control characters, normalize whitespace
+  const plain = String(unsafe)
+    .replace(/<[^>]*>?/gm, ' ')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // 2. SLICE FIRST before escaping so XML entities like &amp; are never cut in half!
+  const sliced = maxLen && plain.length > maxLen ? plain.slice(0, maxLen).trim() : plain;
+  // 3. Escape for XML
+  return escapeXml(sliced);
+};
+
+const cleanUrlAndEscapeXml = (unsafeUrl) => {
+  if (!unsafeUrl) return '';
+  const trimmed = String(unsafeUrl).trim();
+  // Replace raw '&' in URLs with '&amp;' for valid XML
+  return escapeXml(trimmed);
 };
 
 async function getGuestToken() {
@@ -77,13 +95,15 @@ async function generateFeed() {
 
   const itemsXml = validProducts.map((p) => {
     const id = p.id;
-    const name = stripHtmlAndEscapeXml(p.name).slice(0, 150);
-    const description = stripHtmlAndEscapeXml(p.shortDescription || p.name || 'Verified store inventory at your door').slice(0, 5000);
-    const link = `${SITE_URL}/product/${id}`;
-    const mainImg = p.image || (Array.isArray(p.media) && p.media[0]?.url) || `${SITE_URL}/assets/hero-drop.jpg`;
-    const imageLink = stripHtmlAndEscapeXml(mainImg.startsWith('http') ? mainImg : `${SITE_URL}${mainImg.startsWith('/') ? '' : '/'}${mainImg}`);
+    const name = cleanTextAndEscapeXml(p.name, 150);
+    const description = cleanTextAndEscapeXml(p.shortDescription || p.name || 'Verified store inventory at your door', 5000);
+    const link = cleanUrlAndEscapeXml(`${SITE_URL}/product/${id}`);
+    const rawImg = p.image || (Array.isArray(p.media) && p.media[0]?.url) || `${SITE_URL}/assets/hero-drop.jpg`;
+    const fullImg = rawImg.startsWith('http') ? rawImg : `${SITE_URL}${rawImg.startsWith('/') ? '' : '/'}${rawImg}`;
+    const imageLink = cleanUrlAndEscapeXml(fullImg);
     const price = Number(p.sellPrice ?? p.price ?? 0).toFixed(2);
-    const brand = stripHtmlAndEscapeXml((Array.isArray(p.vendor) ? p.vendor[0]?.name : p.vendor?.name) || 'Yorder').slice(0, 70);
+    const rawBrand = (Array.isArray(p.vendor) ? p.vendor[0]?.name : p.vendor?.name) || 'Yorder';
+    const brand = cleanTextAndEscapeXml(rawBrand, 70);
     const isOutOfStock = Number(p.availableQuantity ?? 0) <= 0 && p.availableQuantity !== undefined;
 
     return `    <item>
