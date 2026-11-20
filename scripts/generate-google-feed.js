@@ -23,14 +23,45 @@ const escapeXml = (unsafe) => {
     .replace(/'/g, '&apos;');
 };
 
-const cleanTextAndEscapeXml = (unsafe, maxLen = 150) => {
+const KEEP_UPPER = new Set([
+  'OG', 'II', 'III', 'IV', 'VI', 'VII', 'VIII', 'IX', 'XI', 'XII', 'XXI',
+  'UK', 'US', 'EU', 'LED', 'USB', 'HD', 'FHD', 'UHD', '4K', 'RGB', 'RTX',
+  'GTX', 'SSD', 'RAM', 'GB', 'TB', 'ML', 'GM', 'KG', 'XL', 'XXL', 'XS', 'SPF',
+]);
+
+const normalizeTitleCase = (str) => {
+  if (!str) return '';
+  // Replace mangled '{' or '}' separators from vendor imports with '-'
+  let cleaned = String(str).replace(/[{}]/g, '-').replace(/\s+-\s+/g, ' - ').replace(/\s+/g, ' ').trim();
+  // If more than 65% of alphabetic characters are uppercase, convert to Title Case to satisfy Google editorial rules
+  const letters = cleaned.replace(/[^a-zA-Z]/g, '');
+  const upperCount = cleaned.replace(/[^A-Z]/g, '').length;
+  if (letters.length > 6 && upperCount / letters.length > 0.65) {
+    cleaned = cleaned
+      .split(' ')
+      .map((word) => {
+        const bare = word.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (KEEP_UPPER.has(bare)) return bare;
+        if (word.length <= 1) return word.toUpperCase();
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  }
+  return cleaned;
+};
+
+const cleanTextAndEscapeXml = (unsafe, maxLen = 150, isTitle = false) => {
   if (!unsafe) return '';
   // 1. Strip HTML tags, remove illegal XML control characters, normalize whitespace
-  const plain = String(unsafe)
+  let plain = String(unsafe)
     .replace(/<[^>]*>?/gm, ' ')
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/[{}]/g, '-')
     .replace(/\s+/g, ' ')
     .trim();
+  if (isTitle) {
+    plain = normalizeTitleCase(plain);
+  }
   // 2. SLICE FIRST before escaping so XML entities like &amp; are never cut in half!
   const sliced = maxLen && plain.length > maxLen ? plain.slice(0, maxLen).trim() : plain;
   // 3. Escape for XML
@@ -40,8 +71,66 @@ const cleanTextAndEscapeXml = (unsafe, maxLen = 150) => {
 const cleanUrlAndEscapeXml = (unsafeUrl) => {
   if (!unsafeUrl) return '';
   const trimmed = String(unsafeUrl).trim();
-  // Replace raw '&' in URLs with '&amp;' for valid XML
   return escapeXml(trimmed);
+};
+
+// Google Merchant Center only accepts standard web raster image formats (JPEG, PNG, WebP, GIF)
+const isValidGoogleImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const clean = url.trim();
+  if (!clean.startsWith('http')) return false;
+  if (/\.(html|php|octet-stream|avif|svg|mp4|mov)/i.test(clean)) return false;
+  if (/charset=/i.test(clean)) return false;
+  return /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(clean);
+};
+
+// Exact match with src/api/products.api.ts and ProductDetailPage.tsx inventory logic
+const computeStockAndPrice = (bp) => {
+  const vendor = Array.isArray(bp.vendor) ? bp.vendor[0] : bp.vendor;
+  const isVendorManageInventory =
+    vendor?.is_vendor_manage_inventory === true ||
+    vendor?.is_vendor_manage_inventory === 1 ||
+    vendor?.is_vendor_manage_inventory === '1';
+  const variableProducts = Array.isArray(bp.variableProducts) ? bp.variableProducts : [];
+
+  let isOutOfStock = false;
+  if (!isVendorManageInventory) {
+    isOutOfStock = false;
+  } else if (variableProducts.length > 0) {
+    let allVariantsOut = true;
+    let anyQtySpecified = false;
+    for (const v of variableProducts) {
+      const q = v?.availableQty ?? v?.availableQuantity;
+      if (q !== undefined && q !== null) {
+        anyQtySpecified = true;
+        if (Number(q) > 0) allVariantsOut = false;
+      }
+    }
+    if (anyQtySpecified) {
+      isOutOfStock = allVariantsOut;
+    } else {
+      const baseQty = bp.availableQuantity ?? bp.availableQty;
+      isOutOfStock = baseQty !== undefined && baseQty !== null ? Number(baseQty) <= 0 : false;
+    }
+  } else {
+    const baseQty = bp.availableQuantity ?? bp.availableQty;
+    isOutOfStock = baseQty !== undefined && baseQty !== null ? Number(baseQty) <= 0 : false;
+  }
+
+  // Match ProductDetailPage activeVariant price logic
+  let selectedIdx = 0;
+  if (variableProducts.length > 0 && isVendorManageInventory) {
+    const firstInStock = variableProducts.findIndex((v) => {
+      const q = Number(v?.availableQty ?? v?.availableQuantity ?? 0);
+      return q > 0;
+    });
+    if (firstInStock >= 0) selectedIdx = firstInStock;
+  }
+  const activeVariant = variableProducts[selectedIdx];
+  const basePrice = Number(bp.sellPrice ?? bp.price ?? 0);
+  const activePrice = Number(activeVariant?.sellPrice ?? activeVariant?.price ?? basePrice);
+
+  return { isOutOfStock, activePrice };
 };
 
 async function getGuestToken() {
@@ -62,16 +151,17 @@ async function getGuestToken() {
 }
 
 async function generateFeed() {
-  const TARGET_LIMIT = process.env.FEED_LIMIT || 5000;
+  const TARGET_LIMIT = Number(process.env.FEED_LIMIT || 5000);
+  const FETCH_POOL = Math.round(TARGET_LIMIT * 1.15); // Fetch extra to replace products filtered out due to broken images
   console.log(`[Google Feed Generator] Authenticating with ${API_URL}...`);
   const token = await getGuestToken();
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-  console.log(`[Google Feed Generator] Fetching ${TARGET_LIMIT} products from ${API_URL}/api/user/product/all...`);
+  console.log(`[Google Feed Generator] Fetching pool of ${FETCH_POOL} products from ${API_URL}/api/user/product/all...`);
   let products = [];
 
   try {
-    const res = await fetch(`${API_URL}/api/user/product/all?limit=${TARGET_LIMIT}`, { headers });
+    const res = await fetch(`${API_URL}/api/user/product/all?limit=${FETCH_POOL}`, { headers });
     if (res.ok) {
       const json = await res.json();
       products = json.data || [];
@@ -83,28 +173,48 @@ async function generateFeed() {
     process.exit(1);
   }
 
-  const validProducts = products.filter((p) => {
-    const price = Number(p.sellPrice ?? p.price ?? 0);
-    return p.id && p.name && price > 0;
-  });
+  const validProducts = [];
+  let skippedBrokenImages = 0;
+
+  for (const p of products) {
+    if (!p.id || !p.name) continue;
+    const rawImg = p.image || (Array.isArray(p.media) && p.media[0]?.url) || '';
+    const fullImg = rawImg.startsWith('http') ? rawImg : (rawImg ? `${SITE_URL}${rawImg.startsWith('/') ? '' : '/'}${rawImg}` : '');
+
+    if (!isValidGoogleImageUrl(fullImg)) {
+      skippedBrokenImages++;
+      continue;
+    }
+
+    const { isOutOfStock, activePrice } = computeStockAndPrice(p);
+    if (activePrice <= 0) continue;
+
+    validProducts.push({ p, fullImg, isOutOfStock, activePrice });
+    if (validProducts.length >= TARGET_LIMIT) break;
+  }
+
+  console.log(`[Google Feed Generator] Filtered out ${skippedBrokenImages} broken/unsupported image URLs.`);
 
   if (validProducts.length === 0) {
-    console.error('[Google Feed Generator] No valid products (with id, name, price > 0) found. Aborting overwrite.');
+    console.error('[Google Feed Generator] No valid products found. Aborting overwrite.');
     process.exit(1);
   }
 
-  const itemsXml = validProducts.map((p) => {
+  const itemsXml = validProducts.map(({ p, fullImg, isOutOfStock, activePrice }) => {
     const id = p.id;
-    const name = cleanTextAndEscapeXml(p.name, 150);
-    const description = cleanTextAndEscapeXml(p.shortDescription || p.name || 'Verified store inventory at your door', 5000);
-    const link = cleanUrlAndEscapeXml(`${SITE_URL}/product/${id}`);
-    const rawImg = p.image || (Array.isArray(p.media) && p.media[0]?.url) || `${SITE_URL}/assets/hero-drop.jpg`;
-    const fullImg = rawImg.startsWith('http') ? rawImg : `${SITE_URL}${rawImg.startsWith('/') ? '' : '/'}${rawImg}`;
-    const imageLink = cleanUrlAndEscapeXml(fullImg);
-    const price = Number(p.sellPrice ?? p.price ?? 0).toFixed(2);
+    const name = cleanTextAndEscapeXml(p.name, 150, true);
     const rawBrand = (Array.isArray(p.vendor) ? p.vendor[0]?.name : p.vendor?.name) || 'Yorder';
-    const brand = cleanTextAndEscapeXml(rawBrand, 70);
-    const isOutOfStock = Number(p.availableQuantity ?? 0) <= 0 && p.availableQuantity !== undefined;
+    const brand = cleanTextAndEscapeXml(rawBrand, 70, false);
+
+    let rawDesc = String(p.shortDescription || p.name || '').trim();
+    if (rawDesc.length < 40 || rawDesc.toLowerCase() === String(p.name).trim().toLowerCase()) {
+      rawDesc = `${normalizeTitleCase(p.name)} by ${rawBrand}. Authentic showroom stock in Mumbai, available for instant 10-minute doorstep trial and express delivery on Yorder.`;
+    }
+    const description = cleanTextAndEscapeXml(rawDesc, 5000, false);
+
+    const link = cleanUrlAndEscapeXml(`${SITE_URL}/product/${id}`);
+    const imageLink = cleanUrlAndEscapeXml(fullImg);
+    const price = activePrice.toFixed(2);
 
     return `    <item>
       <g:id>${id}</g:id>
@@ -138,7 +248,7 @@ ${itemsXml}
 
   const outputPath = path.resolve(__dirname, '../public/google-feed.xml');
   fs.writeFileSync(outputPath, xmlContent.trim(), 'utf-8');
-  console.log(`[Google Feed Generator] Successfully wrote ${validProducts.length} products to ${outputPath}`);
+  console.log(`[Google Feed Generator] Successfully wrote ${validProducts.length} clean products to ${outputPath}`);
 }
 
 generateFeed().catch(console.error);
