@@ -1,11 +1,54 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SEO } from '../components/common/SEO';
+import { publicClient } from '../api/client';
 
 export interface PolicyPageProps {
   type: 'returns' | 'shipping' | 'contact' | 'terms' | 'privacy';
 }
 
 export const PolicyPage: React.FC<PolicyPageProps> = ({ type }) => {
+  const [backendHtml, setBackendHtml] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(type === 'terms' || type === 'privacy');
+
+  useEffect(() => {
+    if (type !== 'terms' && type !== 'privacy') {
+      setIsLoading(false);
+      return;
+    }
+
+    const policyName = type === 'terms' ? 'Terms of Service' : 'Privacy Policy';
+    let isMounted = true;
+    setIsLoading(true);
+
+    publicClient
+      .get('/open/policies', {
+        params: {
+          policie_for: 'vendor',
+          name: policyName,
+        },
+      })
+      .then((res) => {
+        if (!isMounted) return;
+        const rawDetails = res.data?.data?.details;
+        if (rawDetails) {
+          // If the HTML includes a full <body> document, extract inner body content
+          const bodyMatch = rawDetails.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          const cleanHtml = bodyMatch ? bodyMatch[1] : rawDetails;
+          setBackendHtml(cleanHtml);
+        }
+      })
+      .catch((err) => {
+        console.warn(`Failed to fetch ${policyName} from backend, using default fallback:`, err?.message);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [type]);
+
   const getPolicyContent = () => {
     switch (type) {
       case 'returns':
@@ -148,13 +191,18 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ type }) => {
         return {
           title: 'Terms of Service',
           canonical: 'https://ywsglobal.com/terms',
-          description: 'Terms of service and customer conditions for Yorder Webservices.',
-          content: (
+          description: 'Official Terms of Service for Yorder Webservices Private Limited.',
+          content: backendHtml ? (
+            <div
+              className="space-y-4 text-sm leading-relaxed text-[var(--t2)] [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--t1)] [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[var(--t1)] [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-[var(--t1)] [&_h3]:mt-4 [&_h3]:mb-1 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_li]:mb-1 [&_strong]:text-[var(--t1)]"
+              dangerouslySetInnerHTML={{ __html: backendHtml }}
+            />
+          ) : (
             <div className="space-y-6 text-sm leading-relaxed text-[var(--t2)]">
               <section>
                 <h2 className="text-base font-semibold text-[var(--t1)] mb-2">1. Agreement to Terms</h2>
                 <p>
-                  By accessing or using Yorder (operated by Yorder Webservices at ywsglobal.com), you agree to be bound by these terms.
+                  By accessing or using Yorder (operated by Yorder Webservices Private Limited at ywsglobal.com), you agree to be bound by these terms.
                   Yorder provides a hyperlocal platform bridging physical retail showroom inventories with doorstep trials and rapid delivery.
                 </p>
               </section>
@@ -173,8 +221,13 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ type }) => {
         return {
           title: 'Privacy Policy',
           canonical: 'https://ywsglobal.com/privacy',
-          description: 'Privacy Policy and data protection terms for Yorder Webservices.',
-          content: (
+          description: 'Official Privacy Policy for Yorder Webservices Private Limited.',
+          content: backendHtml ? (
+            <div
+              className="space-y-4 text-sm leading-relaxed text-[var(--t2)] [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--t1)] [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[var(--t1)] [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-[var(--t1)] [&_h3]:mt-4 [&_h3]:mb-1 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_li]:mb-1 [&_strong]:text-[var(--t1)]"
+              dangerouslySetInnerHTML={{ __html: backendHtml }}
+            />
+          ) : (
             <div className="space-y-6 text-sm leading-relaxed text-[var(--t2)]">
               <section>
                 <h2 className="text-base font-semibold text-[var(--t1)] mb-2">1. Information We Collect</h2>
@@ -202,7 +255,13 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ type }) => {
       <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--t1)] mb-8">
         {title}
       </h1>
-      {content}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-6 h-6 rounded-full border-2 border-[var(--gold)] border-t-transparent animate-spin" />
+        </div>
+      ) : (
+        content
+      )}
     </div>
   );
 };
