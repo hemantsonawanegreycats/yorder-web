@@ -13,13 +13,18 @@ export const SEO: React.FC<SEOProps> = ({
   title = 'Yorder — Real stores, real stock, counted by hand',
   description = 'Every item on Yorder sits on a real shelf in a real store near you. Try at your door in 98 minutes. Rider waits 10 minutes while you try — pay only for what you keep.',
   canonical,
-  ogImage = '/assets/hero-drop.jpg',
+  ogImage = 'https://ywsglobal.com/assets/hero-drop.jpg',
   ogType = 'website',
   jsonLd,
 }) => {
   useEffect(() => {
     // 1. Update Document Title
     document.title = title;
+
+    // Resolve absolute image for social crawlers and Googlebot
+    const resolvedOgImage = ogImage.startsWith('http')
+      ? ogImage
+      : `https://ywsglobal.com${ogImage.startsWith('/') ? '' : '/'}${ogImage}`;
 
     // 2. Helper to set/create meta tag
     const setMeta = (name: string, content: string, isProperty = false) => {
@@ -38,10 +43,10 @@ export const SEO: React.FC<SEOProps> = ({
     setMeta('og:title', title, true);
     setMeta('og:description', description, true);
     setMeta('og:type', ogType, true);
-    setMeta('og:image', ogImage, true);
+    setMeta('og:image', resolvedOgImage, true);
     setMeta('twitter:title', title);
     setMeta('twitter:description', description);
-    setMeta('twitter:image', ogImage);
+    setMeta('twitter:image', resolvedOgImage);
 
     // 3. Update Canonical Tag
     if (canonical) {

@@ -77,7 +77,7 @@ export const AuthPage: React.FC = () => {
   if (isAuthenticated && user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] p-6">
-        <SEO title="Account — Yorder" description="Your Yorder membership account" canonical="https://yorder.com/login" />
+        <SEO title="Account — Yorder" description="Your Yorder membership account" canonical="https://ywsglobal.com/login" />
         <div className="w-full max-w-md p-8 rounded-[24px] bg-[var(--s0)] border border-[var(--bd)] text-center flex flex-col items-center gap-5 shadow-xl">
           <div className="w-16 h-16 rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-xl font-bold text-[var(--gold)]">
             {user.first_name ? user.first_name[0].toUpperCase() : 'YO'}
@@ -112,7 +112,7 @@ export const AuthPage: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] p-4 md:p-8">
-      <SEO title="Sign In & Sign Up — Yorder" description="Sign in or register with your mobile phone number on Yorder." canonical="https://yorder.com/login" />
+      <SEO title="Sign In & Sign Up — Yorder" description="Sign in or register with your mobile phone number on Yorder." canonical="https://ywsglobal.com/login" />
       <div className="w-full max-w-md rounded-[28px] bg-[var(--s0)] border border-[var(--bd)] p-6 md:p-10 shadow-2xl flex flex-col gap-6">
         <div>
           <div className="font-mono text-[10px] tracking-[0.2em] text-[var(--gold)] uppercase font-semibold">

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Yorder — Real stores, real stock, counted by hand</title>
+    <link>https://ywsglobal.com</link>
+    <description>Every item on Yorder sits on a real shelf in a physical showroom near you. Instant door trial in 98 minutes.</description>
+    
+    <item>
+      <g:id>1</g:id>
+      <g:title>Puma Suede Classic XXI Sneakers</g:title>
+      <g:description>Classic streetwear sneakers available in verified showroom. Try at your door in 98 minutes. Pay only for what you keep.</g:description>
+      <g:link>https://ywsglobal.com/product/1</g:link>
+      <g:image_link>https://ywsglobal.com/assets/hero-drop.jpg</g:image_link>
+      <g:condition>new</g:condition>
+      <g:availability>in_stock</g:availability>
+      <g:price>6999.00 INR</g:price>
+      <g:brand>Puma</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:shipping>
+        <g:country>IN</g:country>
+        <g:service>Express Doorstep Trial</g:service>
+        <g:price>0.00 INR</g:price>
+      </g:shipping>
+    </item>
+  </channel>
+</rss>

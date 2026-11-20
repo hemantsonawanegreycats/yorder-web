@@ -81,7 +81,7 @@ export const ProfilePage: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-140px)] p-6 text-center">
-        <SEO title="User Profile — Yorder" description="Sign in to view your Yorder profile, addresses, and door trials." canonical="https://yorder.com/profile" />
+        <SEO title="User Profile — Yorder" description="Sign in to view your Yorder profile, addresses, and door trials." canonical="https://ywsglobal.com/profile" />
         <div className="w-full max-w-md p-8 rounded-[24px] bg-[var(--s0)] border border-[var(--bd)] flex flex-col items-center gap-5 shadow-2xl">
           <div className="w-16 h-16 rounded-full bg-[var(--sw)] border border-[var(--bdw)] flex items-center justify-center text-xl font-bold text-[var(--gold)]">
             <User className="w-8 h-8" />
@@ -105,7 +105,7 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-4 md:px-8 py-5 sm:py-8 flex flex-col gap-5 sm:gap-8 min-h-[calc(100vh-140px)]">
-      <SEO title="User Profile & Settings — Yorder" description="Manage your Yorder profile, saved delivery addresses, and door trials." canonical="https://yorder.com/profile" />
+      <SEO title="User Profile & Settings — Yorder" description="Manage your Yorder profile, saved delivery addresses, and door trials." canonical="https://ywsglobal.com/profile" />
 
       {/* Top Profile Card */}
       <div className="p-4 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] bg-[var(--s0)] border border-[var(--bd)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 shadow-md">

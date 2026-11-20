@@ -374,7 +374,7 @@ export const BagPage: React.FC = () => {
       <SEO
         title="Your Doorstep Trial Bag — Yorder"
         description="Try clothes, sneakers, and tech at your door before paying. 10 minutes trial with the rider."
-        canonical="https://yorder.com/bag"
+        canonical="https://ywsglobal.com/bag"
       />
 
       {/* Left Column: Bag Items List */}

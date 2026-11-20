@@ -91,7 +91,7 @@ export const ChatPage: React.FC = () => {
         <SEO
           title="Showroom Chat — Sign In Required | Yorder"
           description="Log in to chat directly with verified showroom representatives."
-          canonical="https://yorder.com/chat"
+          canonical="https://ywsglobal.com/chat"
         />
         <div className="w-16 h-16 rounded-full bg-[var(--s1)] border border-[var(--gold)] flex items-center justify-center text-[var(--gold)] mb-4">
           <MessageSquare className="w-8 h-8" />
@@ -120,7 +120,7 @@ export const ChatPage: React.FC = () => {
       <SEO
         title="Live Showroom Floor Chat — Yorder"
         description="Chat directly with store representatives on the showroom floor. Ask to hold items or verify stock."
-        canonical="https://yorder.com/chat"
+        canonical="https://ywsglobal.com/chat"
       />
 
       {/* Left Column: Real Showroom Inquiries & Vendors */}

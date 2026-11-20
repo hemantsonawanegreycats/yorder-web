@@ -59,7 +59,7 @@ export const ShowroomsPage: React.FC = () => {
       <SEO
         title="Showrooms & Shelves Near You in Bandra, Mumbai | Yorder"
         description="Local fashion, tech, watch, and beauty showrooms within Bandra. Real stores, real stock, counted by hand."
-        canonical="https://yorder.com/showrooms"
+        canonical="https://ywsglobal.com/showrooms"
         ogImage="/assets/logo-dark.png"
       />
 

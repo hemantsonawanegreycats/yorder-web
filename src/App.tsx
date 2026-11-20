@@ -22,6 +22,7 @@ const BagPage = lazy(() => import('./pages/BagPage').then((m) => ({ default: m.B
 const OrderPage = lazy(() => import('./pages/OrderPage').then((m) => ({ default: m.OrderPage })));
 const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const PolicyPage = lazy(() => import('./pages/PolicyPage').then((m) => ({ default: m.PolicyPage })));
 const AddressMapModal = lazy(() => import('./components/address/AddressMapModal').then((m) => ({ default: m.AddressMapModal })));
 
 const PageLoadingFallback: React.FC = () => (
@@ -128,6 +129,11 @@ export const App: React.FC = () => {
               <Route path="/signup" element={<AuthPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<ProfilePage />} />
+              <Route path="/return-policy" element={<PolicyPage type="returns" />} />
+              <Route path="/shipping-policy" element={<PolicyPage type="shipping" />} />
+              <Route path="/contact" element={<PolicyPage type="contact" />} />
+              <Route path="/terms" element={<PolicyPage type="terms" />} />
+              <Route path="/privacy" element={<PolicyPage type="privacy" />} />
               <Route path="*" element={<HomePage />} />
             </Routes>
           </Suspense>

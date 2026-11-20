@@ -149,21 +149,33 @@ export const ProductDetailPage: React.FC = () => {
     navigate(`/chat${vendorParam}`);
   };
 
+  const canonicalUrl = `https://ywsglobal.com/product/${product.id}`;
+  const absoluteImages = (gallery && gallery.length > 0 ? gallery : [product.img]).map((img) =>
+    img.startsWith('http') ? img : `https://ywsglobal.com${img.startsWith('/') ? '' : '/'}${img}`
+  );
+  const priceValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    image: gallery,
-    description: product.note,
+    image: absoluteImages,
+    description: product.note || product.name,
+    sku: `YORD-${product.id}`,
     brand: {
       '@type': 'Brand',
-      name: product.brand,
+      name: product.brand || 'Yorder',
     },
     offers: {
       '@type': 'Offer',
-      price: product.price,
+      url: canonicalUrl,
+      price: activePrice,
       priceCurrency: 'INR',
-      availability: product.tagOk ? 'https://schema.org/InStock' : 'https://schema.org/LimitedAvailability',
+      priceValidUntil: priceValidUntil,
+      itemCondition: 'https://schema.org/NewCondition',
+      availability: isCurrentOutOfStock
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
       seller: {
         '@type': 'Organization',
         name: store?.name || 'Local Showroom',
@@ -174,10 +186,10 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <div className="flex flex-col w-full">
       <SEO
-        title={`${product.name} — ${rupee(product.price)} | Yorder`}
+        title={`${product.name} — ${rupee(activePrice)} | Yorder`}
         description={`Get ${product.name} from ${store?.name || product.brand}. ${product.stock} in stock. Try 10 minutes at your door before deciding.`}
-        canonical={`https://yorder.com/product/${product.id}`}
-        ogImage={product.img}
+        canonical={canonicalUrl}
+        ogImage={absoluteImages[0] || product.img}
         ogType="product"
         jsonLd={jsonLd}
       />

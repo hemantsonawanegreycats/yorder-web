@@ -227,7 +227,7 @@ export const ProductsPage: React.FC = () => {
       '@type': 'ListItem',
       position: idx + 1,
       name: p.name,
-      url: `https://yorder.com/product/${p.id}`,
+      url: `https://ywsglobal.com/product/${p.id}`,
     })),
   };
 
@@ -236,7 +236,7 @@ export const ProductsPage: React.FC = () => {
       <SEO
         title={`${productsTitle} — On Shelves Near You | Yorder`}
         description={`Explore products in stock on real store shelves near you. Instant door trial in Bandra, Mumbai.`}
-        canonical="https://yorder.com/products"
+        canonical="https://ywsglobal.com/products"
         jsonLd={jsonLd}
       />
 

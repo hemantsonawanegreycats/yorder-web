@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:feed": "node scripts/generate-google-feed.js"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

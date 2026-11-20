@@ -249,7 +249,7 @@ export const StorePage: React.FC = () => {
       <SEO
         title={`${currentStore.name} — Showroom, Live Stock & Hours | Yorder`}
         description={`Explore ${currentStore.count} items on the floor at ${currentStore.name}, ${currentStore.addr}. Doorstep trial in ${currentStore.eta}.`}
-        canonical={`https://yorder.com/store/${currentStore.id}`}
+        canonical={`https://ywsglobal.com/store/${currentStore.id}`}
         ogImage={currentStore.img}
         jsonLd={jsonLd}
       />

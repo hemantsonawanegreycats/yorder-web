@@ -134,7 +134,7 @@ export const OrderPage: React.FC = () => {
       <SEO
         title={`Order #${order.id} Tracking — Yorder`}
         description="Real-time doorstep trial delivery tracking."
-        canonical={`https://yorder.com/order?order_id=${order.id}`}
+        canonical={`https://ywsglobal.com/order?order_id=${order.id}`}
       />
 
       {/* Real Order Identifier Header */}

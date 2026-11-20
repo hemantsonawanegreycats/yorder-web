@@ -11,7 +11,7 @@ export const HomePage: React.FC = () => {
       <SEO
         title="Yorder — Real stores, real stock, counted by hand"
         description="Every item on Yorder sits on a real shelf in a real store near you. Try sneakers, streetwear, watches, and tech at your door in 98 minutes. Pay only for what you keep."
-        canonical="https://yorder.com/"
+        canonical="https://ywsglobal.com/"
         ogImage="/assets/hero-drop.jpg"
       />
       <HeroBanner />
