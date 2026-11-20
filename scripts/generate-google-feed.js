@@ -44,15 +44,16 @@ async function getGuestToken() {
 }
 
 async function generateFeed() {
+  const TARGET_LIMIT = process.env.FEED_LIMIT || 5000;
   console.log(`[Google Feed Generator] Authenticating with ${API_URL}...`);
   const token = await getGuestToken();
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-  console.log(`[Google Feed Generator] Fetching products from ${API_URL}/api/user/product/all...`);
+  console.log(`[Google Feed Generator] Fetching ${TARGET_LIMIT} products from ${API_URL}/api/user/product/all...`);
   let products = [];
 
   try {
-    const res = await fetch(`${API_URL}/api/user/product/all?limit=500`, { headers });
+    const res = await fetch(`${API_URL}/api/user/product/all?limit=${TARGET_LIMIT}`, { headers });
     if (res.ok) {
       const json = await res.json();
       products = json.data || [];
