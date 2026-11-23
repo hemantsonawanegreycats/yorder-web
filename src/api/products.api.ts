@@ -185,18 +185,89 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
   };
 };
 
+let fallbackFeedCache: Product[] | null = null;
+let fallbackFeedPromise: Promise<Product[]> | null = null;
+
+export const loadFallbackFeedProducts = async (): Promise<Product[]> => {
+  if (fallbackFeedCache) return fallbackFeedCache;
+  if (fallbackFeedPromise) return fallbackFeedPromise;
+
+  fallbackFeedPromise = (async () => {
+    try {
+      const res = await fetch('/google-feed.xml');
+      if (!res.ok) return [];
+      const xmlText = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlText, 'application/xml');
+      const itemNodes = Array.from(doc.getElementsByTagName('item'));
+      const getTag = (el: Element, tag: string): string => {
+        const node = el.getElementsByTagName(tag)[0] || el.getElementsByTagName(`g:${tag}`)[0];
+        return node?.textContent?.trim() || '';
+      };
+
+      const parsed: Product[] = itemNodes.map((item) => {
+        const id = getTag(item, 'id');
+        const name = getTag(item, 'title') || 'Showroom Product';
+        const brand = getTag(item, 'brand') || 'Yorder Showroom';
+        const description = getTag(item, 'description') || name;
+        const img = getTag(item, 'image_link') || 'https://ywsglobal.com/assets/hero-drop.jpg';
+        const priceStr = getTag(item, 'price').replace(/[^\d.]/g, '');
+        const price = Number(priceStr) || 0;
+        const availability = getTag(item, 'availability');
+        const isInStock = availability !== 'out_of_stock';
+
+        return {
+          id,
+          name,
+          brand,
+          cat: brand,
+          sid: '62',
+          price,
+          mrp: price,
+          off: 'BEST PRICE',
+          img,
+          gal: [img],
+          sizes: ['Standard'],
+          stock: isInStock ? 'In stock' : 'Out of stock',
+          tagOk: isInStock,
+          note: description,
+          vendorName: brand,
+          rating: 4.8,
+          variableProducts: [],
+          availableQuantity: isInStock ? 5 : 0,
+          isVendorManageInventory: false,
+        };
+      });
+
+      if (parsed.length > 0) {
+        fallbackFeedCache = parsed;
+      }
+      return parsed;
+    } catch (err) {
+      console.warn('Failed to parse fallback google-feed.xml:', err);
+      return [];
+    } finally {
+      fallbackFeedPromise = null;
+    }
+  })();
+
+  return fallbackFeedPromise;
+};
+
 export const fetchProducts = async (params?: Record<string, any>): Promise<Product[]> => {
   try {
     const resp = await apiClient.get('/user/product/all', {
       params: { limit: 50, ...params },
     });
-    if (resp.data && Array.isArray(resp.data.data)) {
+    if (resp.data && Array.isArray(resp.data.data) && resp.data.data.length > 0) {
       return resp.data.data.map(mapBackendToProduct);
     }
   } catch (error) {
-    console.error('Failed to fetch real backend products:', error);
+    console.error('Failed to fetch real backend products, using feed fallback:', error);
   }
-  return [];
+  const fallback = await loadFallbackFeedProducts();
+  const limit = Number(params?.limit) || 50;
+  return fallback.slice(0, limit);
 };
 
 export const fetchProductById = async (id: string | number): Promise<Product | null> => {
@@ -209,9 +280,10 @@ export const fetchProductById = async (id: string | number): Promise<Product | n
       return mapBackendToProduct(productData);
     }
   } catch (error) {
-    console.error(`Failed to fetch real product ${id} from backend:`, error);
+    console.error(`Failed to fetch real product ${id} from backend, checking feed fallback:`, error);
   }
-  return null;
+  const fallback = await loadFallbackFeedProducts();
+  return fallback.find((p) => String(p.id) === cleanId) || null;
 };
 
 export const useProductByIdQuery = (id: string | number | undefined) => {
@@ -267,13 +339,32 @@ export const useInfiniteProductsQuery = (params?: InfiniteProductParams) => {
         queryParams.sortOrder = params.sortOrder;
       }
 
-      const resp = await apiClient.get('/user/product/all', {
-        params: queryParams,
-      });
+      try {
+        const resp = await apiClient.get('/user/product/all', {
+          params: queryParams,
+        });
 
-      const rawItems = Array.isArray(resp.data?.data) ? resp.data.data : [];
-      const items = rawItems.map(mapBackendToProduct);
+        const rawItems = Array.isArray(resp.data?.data) ? resp.data.data : [];
+        if (rawItems.length > 0) {
+          const items = rawItems.map(mapBackendToProduct);
+          return {
+            items,
+            nextPage: items.length >= limit ? pageParam + 1 : undefined,
+          };
+        }
+      } catch (err) {
+        console.warn('Infinite products backend fetch failed, falling back to google-feed.xml:', err);
+      }
 
+      let fallback = await loadFallbackFeedProducts();
+      if (params?.search && params.search.trim()) {
+        const q = params.search.trim().toLowerCase();
+        fallback = fallback.filter(
+          (p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q)
+        );
+      }
+      const start = (pageParam - 1) * limit;
+      const items = fallback.slice(start, start + limit);
       return {
         items,
         nextPage: items.length >= limit ? pageParam + 1 : undefined,
