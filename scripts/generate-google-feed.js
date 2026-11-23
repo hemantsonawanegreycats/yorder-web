@@ -249,6 +249,57 @@ ${itemsXml}
   const outputPath = path.resolve(__dirname, '../public/google-feed.xml');
   fs.writeFileSync(outputPath, xmlContent.trim(), 'utf-8');
   console.log(`[Google Feed Generator] Successfully wrote ${validProducts.length} clean products to ${outputPath}`);
+
+  // Also update public/sitemap.xml with all product URLs so Google Search indexes every product page
+  const productUrlsXml = validProducts
+    .map(
+      ({ p }) => `  <url>
+    <loc>${SITE_URL}/product/${p.id}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>`
+    )
+    .join('\n');
+
+  const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${SITE_URL}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/products</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/showrooms</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/return-policy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/shipping-policy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+${productUrlsXml}
+</urlset>
+`;
+
+  const sitemapPath = path.resolve(__dirname, '../public/sitemap.xml');
+  fs.writeFileSync(sitemapPath, sitemapContent.trim(), 'utf-8');
+  console.log(`[Google Feed Generator] Successfully wrote ${validProducts.length + 6} URLs to ${sitemapPath}`);
 }
 
 generateFeed().catch(console.error);
