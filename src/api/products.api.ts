@@ -188,6 +188,54 @@ export const mapBackendToProduct = (bp: BackendProduct | any): Product => {
 let fallbackFeedCache: Product[] | null = null;
 let fallbackFeedPromise: Promise<Product[]> | null = null;
 
+const decodeXmlEntities = (str: string): string =>
+  (str || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .trim();
+
+const extractXmlTag = (block: string, tag: string): string => {
+  const m = block.match(new RegExp(`<(?:g:)?${tag}>([\\s\\S]*?)<\\/(?:g:)?${tag}>`, 'i'));
+  return m ? decodeXmlEntities(m[1]) : '';
+};
+
+const parseXmlItemBlock = (block: string): Product => {
+  const id = extractXmlTag(block, 'id');
+  const name = extractXmlTag(block, 'title') || 'Showroom Product';
+  const brand = extractXmlTag(block, 'brand') || 'Yorder Showroom';
+  const description = extractXmlTag(block, 'description') || name;
+  const img = extractXmlTag(block, 'image_link') || 'https://ywsglobal.com/assets/hero-drop.jpg';
+  const priceStr = extractXmlTag(block, 'price').replace(/[^\d.]/g, '');
+  const price = Number(priceStr) || 0;
+  const availability = extractXmlTag(block, 'availability');
+  const isInStock = availability !== 'out_of_stock';
+
+  return {
+    id,
+    name,
+    brand,
+    cat: brand,
+    sid: '62',
+    price,
+    mrp: price,
+    off: 'BEST PRICE',
+    img,
+    gal: [img],
+    sizes: ['Standard'],
+    stock: isInStock ? 'In stock' : 'Out of stock',
+    tagOk: isInStock,
+    note: description,
+    vendorName: brand,
+    rating: 4.8,
+    variableProducts: [],
+    availableQuantity: isInStock ? 5 : 0,
+    isVendorManageInventory: false,
+  };
+};
+
 export const loadFallbackFeedProducts = async (): Promise<Product[]> => {
   if (fallbackFeedCache) return fallbackFeedCache;
   if (fallbackFeedPromise) return fallbackFeedPromise;
@@ -197,47 +245,14 @@ export const loadFallbackFeedProducts = async (): Promise<Product[]> => {
       const res = await fetch('/google-feed.xml');
       if (!res.ok) return [];
       const xmlText = await res.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(xmlText, 'application/xml');
-      const itemNodes = Array.from(doc.getElementsByTagName('item'));
-      const getTag = (el: Element, tag: string): string => {
-        const node = el.getElementsByTagName(tag)[0] || el.getElementsByTagName(`g:${tag}`)[0];
-        return node?.textContent?.trim() || '';
-      };
-
-      const parsed: Product[] = itemNodes.map((item) => {
-        const id = getTag(item, 'id');
-        const name = getTag(item, 'title') || 'Showroom Product';
-        const brand = getTag(item, 'brand') || 'Yorder Showroom';
-        const description = getTag(item, 'description') || name;
-        const img = getTag(item, 'image_link') || 'https://ywsglobal.com/assets/hero-drop.jpg';
-        const priceStr = getTag(item, 'price').replace(/[^\d.]/g, '');
-        const price = Number(priceStr) || 0;
-        const availability = getTag(item, 'availability');
-        const isInStock = availability !== 'out_of_stock';
-
-        return {
-          id,
-          name,
-          brand,
-          cat: brand,
-          sid: '62',
-          price,
-          mrp: price,
-          off: 'BEST PRICE',
-          img,
-          gal: [img],
-          sizes: ['Standard'],
-          stock: isInStock ? 'In stock' : 'Out of stock',
-          tagOk: isInStock,
-          note: description,
-          vendorName: brand,
-          rating: 4.8,
-          variableProducts: [],
-          availableQuantity: isInStock ? 5 : 0,
-          isVendorManageInventory: false,
-        };
-      });
+      const blocks = xmlText.split('<item>').slice(1);
+      const parsed: Product[] = [];
+      for (const rawBlock of blocks) {
+        const endIdx = rawBlock.indexOf('</item>');
+        const block = endIdx >= 0 ? rawBlock.slice(0, endIdx) : rawBlock;
+        const prod = parseXmlItemBlock(block);
+        if (prod.id) parsed.push(prod);
+      }
 
       if (parsed.length > 0) {
         fallbackFeedCache = parsed;
