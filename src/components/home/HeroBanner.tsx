@@ -4,6 +4,82 @@ import { useRecentActivityQuery } from '../../api/activity.api';
 import { useHomeBannersQuery, BannerItem } from '../../api/metadata.api';
 import { useVendorsQuery } from '../../api/vendors.api';
 
+type RgbTuple = [number, number, number];
+const leftEdgeColorCache = new Map<string, RgbTuple>();
+const DEFAULT_LEFT_RGB: RgbTuple = [14, 12, 9];
+
+/**
+ * Samples the average RGB color of the left 18% strip of a banner image
+ * (the same technique used by Apple TV+, Spotify, and Netflix hero banners).
+ */
+const sampleLeftEdgeColor = (src: string): Promise<RgbTuple> => {
+  if (!src) return Promise.resolve(DEFAULT_LEFT_RGB);
+  const cached = leftEdgeColorCache.get(src);
+  if (cached) return Promise.resolve(cached);
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 12;
+        canvas.height = 12;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          resolve(DEFAULT_LEFT_RGB);
+          return;
+        }
+        const stripWidth = Math.max(1, Math.round(img.naturalWidth * 0.18));
+        ctx.drawImage(img, 0, 0, stripWidth, img.naturalHeight, 0, 0, 12, 12);
+        const { data } = ctx.getImageData(0, 0, 12, 12);
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 128) continue;
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+        if (count === 0) {
+          resolve(DEFAULT_LEFT_RGB);
+          return;
+        }
+        const avg: RgbTuple = [
+          Math.round(r / count),
+          Math.round(g / count),
+          Math.round(b / count),
+        ];
+        leftEdgeColorCache.set(src, avg);
+        resolve(avg);
+      } catch {
+        // Fallback gracefully if an external host disallows canvas readback
+        resolve(DEFAULT_LEFT_RGB);
+      }
+    };
+    img.onerror = () => resolve(DEFAULT_LEFT_RGB);
+    img.src = src;
+  });
+};
+
+/**
+ * Darkens a sampled RGB color just enough to guarantee crisp white-text contrast
+ * while preserving the banner's hue and warmth.
+ */
+const clampLuminance = ([r, g, b]: RgbTuple, maxLum: number): RgbTuple => {
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  if (lum <= maxLum || lum === 0) return [r, g, b];
+  const scale = maxLum / lum;
+  return [
+    Math.round(r * scale),
+    Math.round(g * scale),
+    Math.round(b * scale),
+  ];
+};
+
 export const HeroBanner: React.FC = () => {
   const { go, setPid, setCat, setQ, deliverTo } = useAppStore();
   const { data: feed } = useRecentActivityQuery();
@@ -14,6 +90,7 @@ export const HeroBanner: React.FC = () => {
   const showroomCount = storeList.length;
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [leftEdgeRgb, setLeftEdgeRgb] = useState<RgbTuple>(DEFAULT_LEFT_RGB);
 
   // Auto-cycle through banners if multiple exist
   useEffect(() => {
@@ -60,16 +137,35 @@ export const HeroBanner: React.FC = () => {
   ).toUpperCase();
   const storeLocation = (activeBanner?.location || 'LINKING ROAD').toUpperCase();
 
+  useEffect(() => {
+    let cancelled = false;
+    sampleLeftEdgeColor(heroImage).then((rgb) => {
+      if (!cancelled) setLeftEdgeRgb(rgb);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [heroImage]);
+
+  const [tr, tg, tb] = clampLuminance(leftEdgeRgb, 58);
+  const [mr, mg, mb] = clampLuminance(leftEdgeRgb, 96);
+  const solidLeftColor = `rgb(${tr}, ${tg}, ${tb})`;
+  const desktopColorGradient = `linear-gradient(90deg, rgba(${tr}, ${tg}, ${tb}, 0.98) 0%, rgba(${tr}, ${tg}, ${tb}, 0.88) 32%, rgba(${mr}, ${mg}, ${mb}, 0.42) 56%, transparent 78%)`;
+  const desktopBottomGradient = `linear-gradient(0deg, rgba(${tr}, ${tg}, ${tb}, 0.8) 0%, transparent 45%)`;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-[1px] bg-[var(--s2)] border-b border-[var(--s2)]">
       {/* Left: Hero Live Drop Banner */}
-      <div className="relative min-h-[360px] sm:min-h-[440px] md:h-[500px] overflow-hidden bg-[#0E0C09] flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none">
-        {/* Ambient blurred backdrop on desktop so colors fill the full hero smoothly */}
+      <div
+        style={{ backgroundColor: solidLeftColor }}
+        className="relative min-h-[360px] sm:min-h-[440px] md:h-[500px] overflow-hidden flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none transition-colors duration-700"
+      >
+        {/* Ambient blurred left-edge backdrop on desktop so the image's exact colors extend across the left half */}
         <img
           src={heroImage}
           alt=""
           aria-hidden="true"
-          className="hidden md:block absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl opacity-35 transition-all duration-700 pointer-events-none"
+          className="hidden md:block absolute inset-0 w-full h-full object-cover object-left scale-125 blur-3xl opacity-55 saturate-125 transition-all duration-700 pointer-events-none"
         />
         {/* Mobile: full-bleed cover matching mobile app */}
         <img
@@ -77,18 +173,28 @@ export const HeroBanner: React.FC = () => {
           alt={heroName}
           className="md:hidden absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 pointer-events-none"
         />
-        {/* Desktop: uncropped natural-aspect image on the right with a soft CSS mask directly on the image's own left edge (zero cut seam) */}
+        {/* Desktop: uncropped natural-aspect image on the right with a silky CSS mask directly on its left edge */}
         <img
           src={heroImage}
           alt={heroName}
           style={{
-            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 22%)',
-            maskImage: 'linear-gradient(to right, transparent 0%, black 22%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 28%)',
+            maskImage: 'linear-gradient(to right, transparent 0%, black 28%)',
           }}
           className="hidden md:block absolute inset-y-0 right-0 h-full w-auto max-w-[75%] object-contain object-right transition-all duration-700 pointer-events-none"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/70 md:via-[#0B0B0C]/35 to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/85 via-transparent to-transparent pointer-events-none" />
+        {/* Mobile dark gradient for text legibility */}
+        <div className="md:hidden absolute inset-0 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/70 to-transparent pointer-events-none" />
+        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/85 via-transparent to-transparent pointer-events-none" />
+        {/* Desktop dynamic color-matched left & bottom gradients sampled from the banner's own left edge */}
+        <div
+          style={{ background: desktopColorGradient }}
+          className="hidden md:block absolute inset-0 transition-all duration-700 pointer-events-none"
+        />
+        <div
+          style={{ background: desktopBottomGradient }}
+          className="hidden md:block absolute inset-0 transition-all duration-700 pointer-events-none"
+        />
 
         {/* Live Drop Pill Badge (Synced with mobile app live status) */}
         <div className="relative z-10 self-start flex items-center gap-2 px-3 sm:px-[13px] py-1.5 sm:py-[7px] rounded-[20px] bg-[#0B0B0C]/70 backdrop-blur-[8px] border border-[#C8A06A]/40 shadow-sm">
