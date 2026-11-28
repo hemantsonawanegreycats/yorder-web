@@ -5,6 +5,7 @@ export interface BannerItem {
   id?: number | string;
   name?: string;
   image_url?: string;
+  desktop_image_url?: string;
   image?: any;
   filter?: Record<string, any>;
   categorie?: string;

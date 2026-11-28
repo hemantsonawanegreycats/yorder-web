@@ -6,43 +6,31 @@ import { useVendorsQuery } from '../../api/vendors.api';
 
 type RgbTuple = [number, number, number];
 interface EdgePalette {
-  top: RgbTuple;
-  mid: RgbTuple;
-  bottom: RgbTuple;
+  gradientCss: string;
   isLight: boolean;
+  needsScrim: boolean;
 }
 
 const edgePaletteCache = new Map<string, EdgePalette>();
 const DEFAULT_PALETTE: EdgePalette = {
-  top: [14, 12, 9],
-  mid: [14, 12, 9],
-  bottom: [11, 11, 12],
+  gradientCss: 'linear-gradient(180deg, rgb(14, 12, 9) 0%, rgb(11, 11, 12) 100%)',
   isLight: false,
+  needsScrim: false,
 };
 
-const avgBand = (data: Uint8ClampedArray, width: number, yStart: number, yEnd: number): RgbTuple => {
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let count = 0;
-  for (let y = yStart; y < yEnd; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      if (data[idx + 3] < 128) continue;
-      r += data[idx];
-      g += data[idx + 1];
-      b += data[idx + 2];
-      count++;
-    }
-  }
-  if (count === 0) return [14, 12, 9];
-  return [Math.round(r / count), Math.round(g / count), Math.round(b / count)];
+/** W3C WCAG 2.1 relative luminance for accurate light/dark contrast decisions */
+const relativeLuminance = ([r, g, b]: RgbTuple): number => {
+  const toLinear = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 };
 
 /**
- * Samples the exact leftmost 4% vertical edge of the banner image at 3 heights
- * (top, middle, bottom) so the left side extends the photo's real studio backdrop
- * pixel-for-pixel, and switches text contrast automatically for light vs dark banners.
+ * Samples 12 fine vertical stops along the leftmost 2.5% edge of the banner image
+ * (pixel-column extrusion) so horizon lines, lighting gradients, and pedestals
+ * align seamlessly across the left half, with WCAG contrast verification.
  */
 const sampleLeftEdgePalette = (src: string): Promise<EdgePalette> => {
   if (!src) return Promise.resolve(DEFAULT_PALETTE);
@@ -54,8 +42,8 @@ const sampleLeftEdgePalette = (src: string): Promise<EdgePalette> => {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
-        const w = 6;
-        const h = 24;
+        const w = 4;
+        const h = 12;
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
@@ -64,20 +52,63 @@ const sampleLeftEdgePalette = (src: string): Promise<EdgePalette> => {
           resolve(DEFAULT_PALETTE);
           return;
         }
-        const stripWidth = Math.max(2, Math.round(img.naturalWidth * 0.04));
+        const stripWidth = Math.max(2, Math.round(img.naturalWidth * 0.025));
         ctx.drawImage(img, 0, 0, stripWidth, img.naturalHeight, 0, 0, w, h);
         const { data } = ctx.getImageData(0, 0, w, h);
 
-        const top = avgBand(data, w, 0, 8);
-        const mid = avgBand(data, w, 8, 16);
-        const bottom = avgBand(data, w, 16, 24);
-        const lum = 0.299 * mid[0] + 0.587 * mid[1] + 0.114 * mid[2];
+        const stops: RgbTuple[] = [];
+        for (let y = 0; y < h; y++) {
+          let r = 0;
+          let g = 0;
+          let b = 0;
+          let count = 0;
+          for (let x = 0; x < w; x++) {
+            const idx = (y * w + x) * 4;
+            if (data[idx + 3] < 128) continue;
+            r += data[idx];
+            g += data[idx + 1];
+            b += data[idx + 2];
+            count++;
+          }
+          stops.push(
+            count > 0
+              ? [Math.round(r / count), Math.round(g / count), Math.round(b / count)]
+              : [14, 12, 9]
+          );
+        }
+
+        // Build exact 12-stop vertical gradient matching every height band of the edge
+        const stopStrings = stops.map(
+          ([r, g, b], i) => `rgb(${r}, ${g}, ${b}) ${((i / (h - 1)) * 100).toFixed(1)}%`
+        );
+        const gradientCss = `linear-gradient(180deg, ${stopStrings.join(', ')})`;
+
+        // Compute WCAG contrast specifically over the text zone (rows 3..9)
+        let tr = 0;
+        let tg = 0;
+        let tb = 0;
+        const textRows = stops.slice(3, 10);
+        textRows.forEach(([r, g, b]) => {
+          tr += r;
+          tg += g;
+          tb += b;
+        });
+        const textBgRgb: RgbTuple = [
+          Math.round(tr / textRows.length),
+          Math.round(tg / textRows.length),
+          Math.round(tb / textRows.length),
+        ];
+
+        const bgLum = relativeLuminance(textBgRgb);
+        const whiteContrast = (1.0 + 0.05) / (bgLum + 0.05);
+        const darkContrast = (bgLum + 0.05) / (0.005 + 0.05); // #111111 luminance ~0.005
+        const isLight = darkContrast > whiteContrast;
+        const bestContrast = Math.max(whiteContrast, darkContrast);
 
         const palette: EdgePalette = {
-          top,
-          mid,
-          bottom,
-          isLight: lum > 135,
+          gradientCss,
+          isLight,
+          needsScrim: bestContrast < 5.5,
         };
         edgePaletteCache.set(src, palette);
         resolve(palette);
@@ -100,19 +131,66 @@ export const HeroBanner: React.FC = () => {
   const showroomCount = storeList.length;
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [edgePalette, setEdgePalette] = useState<EdgePalette>(DEFAULT_PALETTE);
+  const [palettesByUrl, setPalettesByUrl] = useState<Record<string, EdgePalette>>({});
+
+  // Build normalized slide list (falls back cleanly to default slide before API resolves)
+  const slides = useMemo(() => {
+    if (banners && banners.length > 0) {
+      return banners.map((b, idx) => ({
+        key: String(b.id ?? idx),
+        banner: b,
+        image: b.image_url || b.image || '/assets/hero-drop.jpg',
+        desktopImage: b.desktop_image_url,
+        name: b.name || 'The Suede Faded Archive',
+      }));
+    }
+    return [
+      {
+        key: 'default-drop',
+        banner: undefined as BannerItem | undefined,
+        image: '/assets/hero-drop.jpg',
+        desktopImage: undefined as string | undefined,
+        name: 'The Suede Faded Archive',
+      },
+    ];
+  }, [banners]);
+
+  // Pre-sample all banner palettes in parallel on mount so slide transitions have zero color lag
+  useEffect(() => {
+    let cancelled = false;
+    const uniqueUrls = Array.from(new Set(slides.map((s) => s.image).filter(Boolean)));
+    Promise.all(
+      uniqueUrls.map(async (url) => {
+        const palette = await sampleLeftEdgePalette(url);
+        return [url, palette] as const;
+      })
+    ).then((entries) => {
+      if (cancelled) return;
+      setPalettesByUrl((prev) => {
+        const next = { ...prev };
+        for (const [url, palette] of entries) {
+          next[url] = palette;
+        }
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slides]);
 
   // Auto-cycle through banners if multiple exist
   useEffect(() => {
-    if (!banners || banners.length <= 1) return;
+    if (slides.length <= 1) return;
     const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % banners.length);
+      setActiveIndex((prev) => (prev + 1) % slides.length);
     }, 7000);
     return () => clearInterval(interval);
-  }, [banners]);
+  }, [slides.length]);
 
-  const activeBanner: BannerItem | undefined =
-    banners.length > 0 ? banners[activeIndex] || banners[0] : undefined;
+  const safeIndex = activeIndex < slides.length ? activeIndex : 0;
+  const activeSlide = slides[safeIndex] || slides[0];
+  const activeBanner = activeSlide.banner;
 
   const handleShopDrop = (bannerItem?: BannerItem) => {
     const item = bannerItem || activeBanner;
@@ -137,9 +215,6 @@ export const HeroBanner: React.FC = () => {
     }
   };
 
-  const heroImage =
-    activeBanner?.image_url || activeBanner?.image || '/assets/hero-drop.jpg';
-  const heroName = activeBanner?.name || 'The Suede Faded Archive';
   const categoryTag = (
     activeBanner?.categorie ||
     activeBanner?.categorys ||
@@ -147,47 +222,76 @@ export const HeroBanner: React.FC = () => {
   ).toUpperCase();
   const storeLocation = (activeBanner?.location || 'LINKING ROAD').toUpperCase();
 
-  useEffect(() => {
-    let cancelled = false;
-    sampleLeftEdgePalette(heroImage).then((palette) => {
-      if (!cancelled) setEdgePalette(palette);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [heroImage]);
-
-  const { top, mid, bottom, isLight } = edgePalette;
-  const desktopVerticalBg = `linear-gradient(180deg, rgb(${top[0]}, ${top[1]}, ${top[2]}) 0%, rgb(${mid[0]}, ${mid[1]}, ${mid[2]}) 50%, rgb(${bottom[0]}, ${bottom[1]}, ${bottom[2]}) 100%)`;
+  const activePalette = palettesByUrl[activeSlide.image] || DEFAULT_PALETTE;
+  const isLight = !activeSlide.desktopImage && activePalette.isLight;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-[1px] bg-[var(--s2)] border-b border-[var(--s2)]">
       {/* Left: Hero Live Drop Banner */}
       <div className="relative min-h-[360px] sm:min-h-[440px] md:h-[500px] overflow-hidden bg-[#0E0C09] flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none">
-        {/* Desktop: exact 3-point vertical color match sampled from the image's own leftmost 4% edge */}
-        <div
-          style={{ background: desktopVerticalBg }}
-          className="hidden md:block absolute inset-0 transition-all duration-700 pointer-events-none"
-        />
-        {/* Mobile: full-bleed cover matching mobile app */}
-        <img
-          src={heroImage}
-          alt={heroName}
-          className="md:hidden absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 pointer-events-none"
-        />
-        {/* Desktop: uncropped natural-aspect image on the right seamlessly feathered into the exact edge gradient */}
-        <img
-          src={heroImage}
-          alt={heroName}
-          style={{
-            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 18%)',
-            maskImage: 'linear-gradient(to right, transparent 0%, black 18%)',
-          }}
-          className="hidden md:block absolute inset-y-0 right-0 h-full w-auto max-w-[78%] object-contain object-right transition-all duration-700 pointer-events-none"
-        />
+        {/* Stacked cross-fade slide layers (each carries its own 12-stop edge gradient + image for silky transitions) */}
+        {slides.map((slide, idx) => {
+          const isActive = idx === safeIndex;
+          const palette = palettesByUrl[slide.image] || DEFAULT_PALETTE;
+          return (
+            <div
+              key={slide.key}
+              aria-hidden={!isActive}
+              className={`absolute inset-0 transition-opacity duration-700 ease-out pointer-events-none ${
+                isActive ? 'opacity-100 z-[2]' : 'opacity-0 z-[1]'
+              }`}
+            >
+              {/* Mobile: full-bleed cover matching mobile app */}
+              <img
+                src={slide.image}
+                alt={isActive ? slide.name : ''}
+                className="md:hidden absolute inset-0 w-full h-full object-cover object-center"
+              />
+
+              {slide.desktopImage ? (
+                /* Dedicated wide desktop artwork when provided by CMS */
+                <img
+                  src={slide.desktopImage}
+                  alt={isActive ? slide.name : ''}
+                  className="hidden md:block absolute inset-0 w-full h-full object-cover object-center"
+                />
+              ) : (
+                <>
+                  {/* Desktop: 12-stop pixel-column vertical edge extrusion */}
+                  <div
+                    style={{ background: palette.gradientCss }}
+                    className="hidden md:block absolute inset-0"
+                  />
+                  {/* Desktop: uncropped natural-aspect image on the right feathered seamlessly into the 12-stop edge */}
+                  <img
+                    src={slide.image}
+                    alt={isActive ? slide.name : ''}
+                    style={{
+                      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 16%)',
+                      maskImage: 'linear-gradient(to right, transparent 0%, black 16%)',
+                    }}
+                    className="hidden md:block absolute inset-y-0 right-0 h-full w-auto max-w-[78%] object-contain object-right"
+                  />
+                  {/* WCAG mid-tone contrast scrim (only rendered when contrast ratio < 5.5:1) */}
+                  {palette.needsScrim && (
+                    <div
+                      style={{
+                        background: palette.isLight
+                          ? 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.18) 38%, transparent 65%)'
+                          : 'linear-gradient(90deg, rgba(11,11,12,0.45) 0%, rgba(11,11,12,0.22) 38%, transparent 65%)',
+                      }}
+                      className="hidden md:block absolute inset-0"
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+
         {/* Mobile dark gradient for text legibility */}
-        <div className="md:hidden absolute inset-0 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/70 to-transparent pointer-events-none" />
-        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/85 via-transparent to-transparent pointer-events-none" />
+        <div className="md:hidden absolute inset-0 z-[3] bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/70 to-transparent pointer-events-none" />
+        <div className="md:hidden absolute inset-0 z-[3] bg-gradient-to-t from-[#0B0B0C]/85 via-transparent to-transparent pointer-events-none" />
 
         {/* Live Drop Pill Badge (Synced with mobile app live status) */}
         <div
