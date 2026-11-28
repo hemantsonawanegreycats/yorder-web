@@ -64,25 +64,31 @@ export const HeroBanner: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-[1px] bg-[var(--s2)] border-b border-[var(--s2)]">
       {/* Left: Hero Live Drop Banner */}
       <div className="relative min-h-[360px] sm:min-h-[440px] md:h-[500px] overflow-hidden bg-[#0E0C09] flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none">
-        {/* Ambient blurred backdrop on desktop so colors fill the wide frame smoothly */}
+        {/* Ambient blurred backdrop on desktop so colors fill the full hero smoothly */}
         <img
           src={heroImage}
           alt=""
           aria-hidden="true"
           className="hidden md:block absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl opacity-35 transition-all duration-700 pointer-events-none"
         />
-        {/* Uncropped sharp banner image anchored right on desktop, full cover on mobile */}
-        <div className="absolute inset-0 md:inset-y-0 md:left-auto md:right-0 md:w-[62%] h-full pointer-events-none">
-          <img
-            src={heroImage}
-            alt={heroName}
-            className="w-full h-full object-cover object-center md:object-contain md:object-right transition-all duration-700"
-          />
-          {/* Soft left-edge blend on desktop so the product image merges cleanly into the copy area */}
-          <div className="hidden md:block absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/60 to-transparent" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/75 md:via-[#0B0B0C]/45 to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/90 via-transparent to-transparent pointer-events-none" />
+        {/* Mobile: full-bleed cover matching mobile app */}
+        <img
+          src={heroImage}
+          alt={heroName}
+          className="md:hidden absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 pointer-events-none"
+        />
+        {/* Desktop: uncropped natural-aspect image on the right with a soft CSS mask directly on the image's own left edge (zero cut seam) */}
+        <img
+          src={heroImage}
+          alt={heroName}
+          style={{
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 22%)',
+            maskImage: 'linear-gradient(to right, transparent 0%, black 22%)',
+          }}
+          className="hidden md:block absolute inset-y-0 right-0 h-full w-auto max-w-[75%] object-contain object-right transition-all duration-700 pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/70 md:via-[#0B0B0C]/35 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/85 via-transparent to-transparent pointer-events-none" />
 
         {/* Live Drop Pill Badge (Synced with mobile app live status) */}
         <div className="relative z-10 self-start flex items-center gap-2 px-3 sm:px-[13px] py-1.5 sm:py-[7px] rounded-[20px] bg-[#0B0B0C]/70 backdrop-blur-[8px] border border-[#C8A06A]/40 shadow-sm">
