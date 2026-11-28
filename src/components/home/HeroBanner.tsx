@@ -5,16 +5,48 @@ import { useHomeBannersQuery, BannerItem } from '../../api/metadata.api';
 import { useVendorsQuery } from '../../api/vendors.api';
 
 type RgbTuple = [number, number, number];
-const leftEdgeColorCache = new Map<string, RgbTuple>();
-const DEFAULT_LEFT_RGB: RgbTuple = [14, 12, 9];
+interface EdgePalette {
+  top: RgbTuple;
+  mid: RgbTuple;
+  bottom: RgbTuple;
+  isLight: boolean;
+}
+
+const edgePaletteCache = new Map<string, EdgePalette>();
+const DEFAULT_PALETTE: EdgePalette = {
+  top: [14, 12, 9],
+  mid: [14, 12, 9],
+  bottom: [11, 11, 12],
+  isLight: false,
+};
+
+const avgBand = (data: Uint8ClampedArray, width: number, yStart: number, yEnd: number): RgbTuple => {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let count = 0;
+  for (let y = yStart; y < yEnd; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      if (data[idx + 3] < 128) continue;
+      r += data[idx];
+      g += data[idx + 1];
+      b += data[idx + 2];
+      count++;
+    }
+  }
+  if (count === 0) return [14, 12, 9];
+  return [Math.round(r / count), Math.round(g / count), Math.round(b / count)];
+};
 
 /**
- * Samples the average RGB color of the left 18% strip of a banner image
- * (the same technique used by Apple TV+, Spotify, and Netflix hero banners).
+ * Samples the exact leftmost 4% vertical edge of the banner image at 3 heights
+ * (top, middle, bottom) so the left side extends the photo's real studio backdrop
+ * pixel-for-pixel, and switches text contrast automatically for light vs dark banners.
  */
-const sampleLeftEdgeColor = (src: string): Promise<RgbTuple> => {
-  if (!src) return Promise.resolve(DEFAULT_LEFT_RGB);
-  const cached = leftEdgeColorCache.get(src);
+const sampleLeftEdgePalette = (src: string): Promise<EdgePalette> => {
+  if (!src) return Promise.resolve(DEFAULT_PALETTE);
+  const cached = edgePaletteCache.get(src);
   if (cached) return Promise.resolve(cached);
 
   return new Promise((resolve) => {
@@ -22,62 +54,40 @@ const sampleLeftEdgeColor = (src: string): Promise<RgbTuple> => {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
+        const w = 6;
+        const h = 24;
         const canvas = document.createElement('canvas');
-        canvas.width = 12;
-        canvas.height = 12;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) {
-          resolve(DEFAULT_LEFT_RGB);
+          resolve(DEFAULT_PALETTE);
           return;
         }
-        const stripWidth = Math.max(1, Math.round(img.naturalWidth * 0.18));
-        ctx.drawImage(img, 0, 0, stripWidth, img.naturalHeight, 0, 0, 12, 12);
-        const { data } = ctx.getImageData(0, 0, 12, 12);
-        let r = 0;
-        let g = 0;
-        let b = 0;
-        let count = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] < 128) continue;
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
-          count++;
-        }
-        if (count === 0) {
-          resolve(DEFAULT_LEFT_RGB);
-          return;
-        }
-        const avg: RgbTuple = [
-          Math.round(r / count),
-          Math.round(g / count),
-          Math.round(b / count),
-        ];
-        leftEdgeColorCache.set(src, avg);
-        resolve(avg);
+        const stripWidth = Math.max(2, Math.round(img.naturalWidth * 0.04));
+        ctx.drawImage(img, 0, 0, stripWidth, img.naturalHeight, 0, 0, w, h);
+        const { data } = ctx.getImageData(0, 0, w, h);
+
+        const top = avgBand(data, w, 0, 8);
+        const mid = avgBand(data, w, 8, 16);
+        const bottom = avgBand(data, w, 16, 24);
+        const lum = 0.299 * mid[0] + 0.587 * mid[1] + 0.114 * mid[2];
+
+        const palette: EdgePalette = {
+          top,
+          mid,
+          bottom,
+          isLight: lum > 135,
+        };
+        edgePaletteCache.set(src, palette);
+        resolve(palette);
       } catch {
-        // Fallback gracefully if an external host disallows canvas readback
-        resolve(DEFAULT_LEFT_RGB);
+        resolve(DEFAULT_PALETTE);
       }
     };
-    img.onerror = () => resolve(DEFAULT_LEFT_RGB);
+    img.onerror = () => resolve(DEFAULT_PALETTE);
     img.src = src;
   });
-};
-
-/**
- * Darkens a sampled RGB color just enough to guarantee crisp white-text contrast
- * while preserving the banner's hue and warmth.
- */
-const clampLuminance = ([r, g, b]: RgbTuple, maxLum: number): RgbTuple => {
-  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-  if (lum <= maxLum || lum === 0) return [r, g, b];
-  const scale = maxLum / lum;
-  return [
-    Math.round(r * scale),
-    Math.round(g * scale),
-    Math.round(b * scale),
-  ];
 };
 
 export const HeroBanner: React.FC = () => {
@@ -90,7 +100,7 @@ export const HeroBanner: React.FC = () => {
   const showroomCount = storeList.length;
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [leftEdgeRgb, setLeftEdgeRgb] = useState<RgbTuple>(DEFAULT_LEFT_RGB);
+  const [edgePalette, setEdgePalette] = useState<EdgePalette>(DEFAULT_PALETTE);
 
   // Auto-cycle through banners if multiple exist
   useEffect(() => {
@@ -139,33 +149,25 @@ export const HeroBanner: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    sampleLeftEdgeColor(heroImage).then((rgb) => {
-      if (!cancelled) setLeftEdgeRgb(rgb);
+    sampleLeftEdgePalette(heroImage).then((palette) => {
+      if (!cancelled) setEdgePalette(palette);
     });
     return () => {
       cancelled = true;
     };
   }, [heroImage]);
 
-  const [tr, tg, tb] = clampLuminance(leftEdgeRgb, 58);
-  const [mr, mg, mb] = clampLuminance(leftEdgeRgb, 96);
-  const solidLeftColor = `rgb(${tr}, ${tg}, ${tb})`;
-  const desktopColorGradient = `linear-gradient(90deg, rgba(${tr}, ${tg}, ${tb}, 0.98) 0%, rgba(${tr}, ${tg}, ${tb}, 0.88) 32%, rgba(${mr}, ${mg}, ${mb}, 0.42) 56%, transparent 78%)`;
-  const desktopBottomGradient = `linear-gradient(0deg, rgba(${tr}, ${tg}, ${tb}, 0.8) 0%, transparent 45%)`;
+  const { top, mid, bottom, isLight } = edgePalette;
+  const desktopVerticalBg = `linear-gradient(180deg, rgb(${top[0]}, ${top[1]}, ${top[2]}) 0%, rgb(${mid[0]}, ${mid[1]}, ${mid[2]}) 50%, rgb(${bottom[0]}, ${bottom[1]}, ${bottom[2]}) 100%)`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_1fr] gap-[1px] bg-[var(--s2)] border-b border-[var(--s2)]">
       {/* Left: Hero Live Drop Banner */}
-      <div
-        style={{ backgroundColor: solidLeftColor }}
-        className="relative min-h-[360px] sm:min-h-[440px] md:h-[500px] overflow-hidden flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none transition-colors duration-700"
-      >
-        {/* Ambient blurred left-edge backdrop on desktop so the image's exact colors extend across the left half */}
-        <img
-          src={heroImage}
-          alt=""
-          aria-hidden="true"
-          className="hidden md:block absolute inset-0 w-full h-full object-cover object-left scale-125 blur-3xl opacity-55 saturate-125 transition-all duration-700 pointer-events-none"
+      <div className="relative min-h-[360px] sm:min-h-[440px] md:h-[500px] overflow-hidden bg-[#0E0C09] flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none">
+        {/* Desktop: exact 3-point vertical color match sampled from the image's own leftmost 4% edge */}
+        <div
+          style={{ background: desktopVerticalBg }}
+          className="hidden md:block absolute inset-0 transition-all duration-700 pointer-events-none"
         />
         {/* Mobile: full-bleed cover matching mobile app */}
         <img
@@ -173,31 +175,28 @@ export const HeroBanner: React.FC = () => {
           alt={heroName}
           className="md:hidden absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 pointer-events-none"
         />
-        {/* Desktop: uncropped natural-aspect image on the right with a silky CSS mask directly on its left edge */}
+        {/* Desktop: uncropped natural-aspect image on the right seamlessly feathered into the exact edge gradient */}
         <img
           src={heroImage}
           alt={heroName}
           style={{
-            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 28%)',
-            maskImage: 'linear-gradient(to right, transparent 0%, black 28%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 18%)',
+            maskImage: 'linear-gradient(to right, transparent 0%, black 18%)',
           }}
-          className="hidden md:block absolute inset-y-0 right-0 h-full w-auto max-w-[75%] object-contain object-right transition-all duration-700 pointer-events-none"
+          className="hidden md:block absolute inset-y-0 right-0 h-full w-auto max-w-[78%] object-contain object-right transition-all duration-700 pointer-events-none"
         />
         {/* Mobile dark gradient for text legibility */}
         <div className="md:hidden absolute inset-0 bg-gradient-to-r from-[#0B0B0C] via-[#0B0B0C]/70 to-transparent pointer-events-none" />
         <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/85 via-transparent to-transparent pointer-events-none" />
-        {/* Desktop dynamic color-matched left & bottom gradients sampled from the banner's own left edge */}
-        <div
-          style={{ background: desktopColorGradient }}
-          className="hidden md:block absolute inset-0 transition-all duration-700 pointer-events-none"
-        />
-        <div
-          style={{ background: desktopBottomGradient }}
-          className="hidden md:block absolute inset-0 transition-all duration-700 pointer-events-none"
-        />
 
         {/* Live Drop Pill Badge (Synced with mobile app live status) */}
-        <div className="relative z-10 self-start flex items-center gap-2 px-3 sm:px-[13px] py-1.5 sm:py-[7px] rounded-[20px] bg-[#0B0B0C]/70 backdrop-blur-[8px] border border-[#C8A06A]/40 shadow-sm">
+        <div
+          className={`relative z-10 self-start flex items-center gap-2 px-3 sm:px-[13px] py-1.5 sm:py-[7px] rounded-[20px] backdrop-blur-[8px] shadow-sm transition-colors duration-500 ${
+            isLight
+              ? 'bg-[#0B0B0C]/70 md:bg-[#111111]/80 border border-[#C8A06A]/40 md:border-black/15'
+              : 'bg-[#0B0B0C]/70 border border-[#C8A06A]/40'
+          }`}
+        >
           <span className="w-[6px] h-[6px] rounded-full bg-[#4FB44D] shadow-[0_0_8px_#4FB44D] animate-pulse" />
           <span className="font-medium text-[8.5px] sm:text-[9px] leading-none tracking-[0.16em] text-[#E7D9C1]">
             LIVE DROP · IN STORE
@@ -206,10 +205,18 @@ export const HeroBanner: React.FC = () => {
 
         {/* Hero Copy & Functional CTA */}
         <div className="relative z-10 max-w-[560px] mt-8 sm:mt-12 md:mt-0">
-          <div className="font-medium text-[9px] sm:text-[9.5px] leading-none tracking-[0.16em] sm:tracking-[0.18em] text-[#C8A06A] mb-2.5 sm:mb-3 truncate">
+          <div
+            className={`font-medium text-[9px] sm:text-[9.5px] leading-none tracking-[0.16em] sm:tracking-[0.18em] mb-2.5 sm:mb-3 truncate transition-colors duration-500 ${
+              isLight ? 'text-[#C8A06A] md:text-[#5C4326]' : 'text-[#C8A06A]'
+            }`}
+          >
             {categoryTag} · {storeLocation}
           </div>
-          <h1 className="font-light text-[28px] sm:text-[36px] md:text-[52px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] text-[#F7F3EC] mb-4 sm:mb-[24px]">
+          <h1
+            className={`font-light text-[28px] sm:text-[36px] md:text-[52px] leading-[1.08] md:leading-[1.05] tracking-[-0.04em] mb-4 sm:mb-[24px] transition-colors duration-500 ${
+              isLight ? 'text-[#F7F3EC] md:text-[#111111]' : 'text-[#F7F3EC]'
+            }`}
+          >
             {activeBanner?.name ? (
               <span className="font-semibold">{activeBanner.name}</span>
             ) : (
@@ -224,11 +231,19 @@ export const HeroBanner: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <button
               onClick={() => handleShopDrop(activeBanner)}
-              className="yc h-[40px] sm:h-[46px] px-5 sm:px-[28px] rounded-[23px] bg-[#F2ECE1] flex items-center font-semibold text-[12px] sm:text-[13px] leading-none text-[#0B0B0C] hover:opacity-90 active:scale-95 shadow-lg transition-transform"
+              className={`yc h-[40px] sm:h-[46px] px-5 sm:px-[28px] rounded-[23px] flex items-center font-semibold text-[12px] sm:text-[13px] leading-none hover:opacity-90 active:scale-95 shadow-lg transition-all duration-500 ${
+                isLight
+                  ? 'bg-[#F2ECE1] text-[#0B0B0C] md:bg-[#111111] md:text-[#F7F3EC]'
+                  : 'bg-[#F2ECE1] text-[#0B0B0C]'
+              }`}
             >
               Shop the drop
             </button>
-            <div className="flex items-center gap-2 text-[11px] sm:text-[12px] font-normal text-[#CFCBC3]">
+            <div
+              className={`flex items-center gap-2 text-[11px] sm:text-[12px] font-normal transition-colors duration-500 ${
+                isLight ? 'text-[#CFCBC3] md:text-[#2A2622]' : 'text-[#CFCBC3]'
+              }`}
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-[#4FB44D] flex-shrink-0" />
               <span>In stock · Delivered in minutes</span>
             </div>
@@ -245,7 +260,11 @@ export const HeroBanner: React.FC = () => {
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   activeIndex === idx
-                    ? 'w-6 bg-[#F2ECE1]'
+                    ? isLight
+                      ? 'w-6 bg-[#F2ECE1] md:bg-[#111111]'
+                      : 'w-6 bg-[#F2ECE1]'
+                    : isLight
+                    ? 'w-1.5 bg-white/30 hover:bg-white/60 md:bg-black/25 md:hover:bg-black/50'
                     : 'w-1.5 bg-white/30 hover:bg-white/60'
                 }`}
               />
